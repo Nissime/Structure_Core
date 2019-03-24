@@ -1,0 +1,7 @@
+
+structure_driver:
+  vis_enable: true
+  ir_enable: false
+  depth_enable: false
+  gyro_enable: true
+  acc_enable: true
