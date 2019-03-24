@@ -391,7 +391,7 @@ int main(int argc, char **argv) {
     ROS_INFO_STREAM("vis_enable :  " << settings.structureCore.visibleEnabled);
     ros::param::param<bool>("~acc_enable",settings.structureCore.accelerometerEnabled,false);
     ros::param::param<bool>("~gyro_enable",settings.structureCore.gyroscopeEnabled,false);
-    
+
     /** @brief The target resolution for streamed depth frames. @see StructureCoreDepthResolution */
     settings.structureCore.depthResolution = ST::StructureCoreDepthResolution::_320x240;
     /** @brief The preset depth range mode for streamed depth frames. Modifies the min/max range of the depth values. */
