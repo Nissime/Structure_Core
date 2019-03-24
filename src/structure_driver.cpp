@@ -11,11 +11,18 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/fill_image.h>
+#include <sensor_msgs/Imu.h>
+
+
+#define DEFAULT_FRAME_ID 	"imu"
+
 
 class SessionDelegate : public ST::CaptureSessionDelegate {
     private:
         std::mutex lock;
         std::condition_variable cond;
+        std::string frame_id_;
+
         bool ready = false;
         bool done = false;
 
@@ -33,9 +40,12 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
         ros::Publisher left_image_pub_;
         ros::Publisher left_info_pub_;
+
         ros::Publisher right_image_pub_;
         ros::Publisher right_info_pub_;
 
+        ros::Publisher imu_pub_;
+        sensor_msgs::Imu imu_;
 
         sensor_msgs::ImagePtr imageFromDepthFrame(const std::string& frame_id, const ST::DepthFrame& f)
         {
@@ -131,6 +141,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
             right->is_bigendian = 0;
             right->data.resize(right->height * right->step);
             uint16_t* right_as_shorts = reinterpret_cast<uint16_t*>(right->data.data());
+	ros::Publisher imu_pub_;
 
             sensor_msgs::ImagePtr left(new sensor_msgs::Image);
             left->header.frame_id = left_frame_id;
@@ -256,7 +267,8 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
             msg->is_bigendian = 0;
             register_convert(depth, ir, msg->data);
 
-            // Camera info is same as visual, but with depth timestamp
+            // Camera     std::string frame_id;
+
             auto info = infoFromFrame(msg->header.frame_id, ir, 2);
             info->header.stamp = msg->header.stamp;
 
@@ -264,7 +276,48 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
             depth_ir_aligned_info_pub_.publish(info);
         }
 
+        void publishIMU()
+      	{
+          //sensor_msgs::Imu msg(new sensor_msgs::Image);
+      		// TODO: convert timstamp to ROS time
+      		// header.stamp =  timestamp();
+      		imu_.header.frame_id = DEFAULT_FRAME_ID;
+          //imu_.header.stamp = timestamp;
+      		// TODO: fuse accel and gyro
+      		imu_pub_.publish(imu_);
+      	}
 
+        void handleAccel(const ST::AccelerometerEvent &accelEvent)
+        {
+          ROS_DEBUG_STREAM_THROTTLE(1.0, "Structure_Core_Node" << ": handleAccel");
+
+          imu_.linear_acceleration.x = accelEvent.acceleration().x;
+          imu_.linear_acceleration.y = accelEvent.acceleration().y;
+          imu_.linear_acceleration.z = accelEvent.acceleration().z;
+          imu_.header.stamp = ros::Time::now();//accelEvent.timestamp();
+          //printf("Accelerometer event: [% .5f % .5f % .5f]\n", imu_.linear_acceleration.x, imu_.linear_acceleration.y, imu_.linear_acceleration.z);
+          //publishIMU(accelEvent.timestamp());
+          publishIMU();
+          //publishIMU(accelEvent.timestamp());
+        }
+
+        void handleGyro(const ST::GyroscopeEvent &gyroEvent)
+        {
+          ROS_DEBUG_STREAM_THROTTLE(1.0, "Structure_Core_Node" << ": handleGyro");
+
+          imu_.angular_velocity.x = gyroEvent.rotationRate().x;
+          imu_.angular_velocity.y = gyroEvent.rotationRate().y;
+          imu_.angular_velocity.z = gyroEvent.rotationRate().z;
+          imu_.header.stamp = ros::Time::now();//accelEvent.timestamp();
+          //imu.header.stamp = gyroEvent.timestamp();
+          //publishIMU(gyroEvent.timestamp());
+          publishIMU();
+          //printf("Gyroscope event: [% .5f % .5f % .5f          imu.header.stamp = accelEvent.timestamp();]\n", gyroEvent.rotationRate().x, gyroEvent.rotationRate().y, gyroEvent.rotationRate().z);
+
+
+
+          //publishIMU(accelEvent.timestamp());
+        }
     public:
 
         SessionDelegate(ros::NodeHandle& n, ros::NodeHandle& pnh)
@@ -292,6 +345,10 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
             ros::NodeHandle rn(n, "right");
             right_image_pub_ = rn.advertise<sensor_msgs::Image>("image_raw", 10);
             right_info_pub_ = rn.advertise<sensor_msgs::CameraInfo>("camera_info", 10);
+
+            ros::NodeHandle im(n, "imu_node");
+            imu_pub_ = im.advertise<sensor_msgs::Imu>("imu",10);
+
         }
 
         void captureSessionEventDidOccur(ST::CaptureSession *, ST::CaptureSessionEventId event) override {
@@ -342,14 +399,16 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
                         publishDepthIRAligned(sample.depthFrame, sample.infraredFrame);
                     }
                     break;
-                    case ST::CaptureSessionSample::Type::AccelerometerEvent:
-                        printf("Accelerometer event: [% .5f % .5f % .5f]\n", sample.accelerometerEvent.acceleration().x, sample.accelerometerEvent.acceleration().y, sample.accelerometerEvent.acceleration().z);
-                        break;
-                    case ST::CaptureSessionSample::Type::GyroscopeEvent:
-                        printf("Gyroscope event: [% .5f % .5f % .5f]\n", sample.gyroscopeEvent.rotationRate().x, sample.gyroscopeEvent.rotationRate().y, sample.gyroscopeEvent.rotationRate().z);
-                        break;
-                    default:
-                        printf("Sample type unhandled\n");
+                case ST::CaptureSessionSample::Type::AccelerometerEvent:
+                    handleAccel(sample.accelerometerEvent);
+                    //printf("Accelerometer event: [% .5f % .5f % .5f]\n", sample.accelerometerEvent.acceleration().x, sample.accelerometerEvent.acceleration().y, sample.accelerometerEvent.acceleration().z);
+                    break;
+                case ST::CaptureSessionSample::Type::GyroscopeEvent:
+                    //printf("Gyroscope event: [% .5f % .5f % .5f]\n", sample.gyroscopeEvent.rotationRate().x, sample.gyroscopeEvent.rotationRate().y, sample.gyroscopeEvent.rotationRate().z);
+                    handleGyro(sample.gyroscopeEvent);
+                    break;
+                default:
+                    printf("Sample type unhandled\n");
             }
         }
 
