@@ -452,9 +452,9 @@ int main(int argc, char **argv) {
     ros::param::param<bool>("~gyro_enable",settings.structureCore.gyroscopeEnabled,false);
 
     /** @brief The target resolution for streamed depth frames. @see StructureCoreDepthResolution */
-    settings.structureCore.depthResolution = ST::StructureCoreDepthResolution::_320x240;
+    settings.structureCore.depthResolution = ST::StructureCoreDepthResolution::SXGA;
     /** @brief The preset depth range mode for streamed depth frames. Modifies the min/max range of the depth values. */
-    settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::VeryLong;
+    settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::Long;
     /** @brief The target resolution for streamed depth frames. @see StructureCoreInfraredResolution
         Non-default infrared and visible resolutions are currently unavailable.
     */
@@ -485,9 +485,9 @@ int main(int argc, char **argv) {
     /** @brief The initial visible gain to start streaming with. Can be any number between 1 and 8. */
     settings.structureCore.initialVisibleGain = 2.0f;
     /** @brief The initial infrared exposure to start streaming with. */
-    settings.structureCore.initialInfraredExposure = 0.0146f;
+    settings.structureCore.initialInfraredExposure = 0.033f;
     /** @brief The initial infrared gain to start streaming with. Can be 0, 1, 2, or 3. */
-    settings.structureCore.initialInfraredGain = 3;
+    settings.structureCore.initialInfraredGain = 2.0f;
     /** @brief Setting this to true will eliminate saturation issues, but might result in sparser depth. */
     settings.structureCore.disableInfraredIntensityBalance = true;
     /** @brief Setting this to true will reduce latency, but might drop more frame */
