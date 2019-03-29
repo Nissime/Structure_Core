@@ -1,7 +1,18 @@
 
 structure_driver:
   vis_enable: true
-  ir_enable: false
-  depth_enable: false
-  gyro_enable: true
-  acc_enable: true
+  ir_enable: true
+  depth_enable: true
+  gyro_enable: false
+  acc_enable: false
+
+  #frame rates
+  infraredFramerate: 30.0f
+  depthFramerate: 30.0f
+  visibleFramerate: 30.0f
+
+  #exposure time and gain
+  initialVisibleExposure: 0.015f
+  initialVisibleGain: 3.0f
+  initialInfraredExposure: 0.033f
+  initialInfraredGain: 2.0f
