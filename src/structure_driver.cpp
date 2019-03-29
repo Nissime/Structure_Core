@@ -284,7 +284,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
       		imu_.header.frame_id = DEFAULT_FRAME_ID;
           //imu_.header.stamp = timestamp;
       		// TODO: fuse accel and gyro
-      		imu_pub_.publish(imu_);
+      		//imu_pub_.publish(imu_);
       	}
 
         void handleAccel(const ST::AccelerometerEvent &accelEvent)
@@ -442,7 +442,7 @@ int main(int argc, char **argv) {
     /** @brief Set to true to deliver IMU events on a separate, dedicated background thread. Only supported for Structure Core, currently. */
     settings.lowLatencyIMU = true;
     /** @brief Set to true to apply a correction filter to the depth before streaming. This may effect performance. */
-    settings.applyExpensiveCorrection = true;
+    settings.applyExpensiveCorrection = true;//ST::DepthFrame::applyExpensiveCorrection::True;
     /** @brief Set to true to enable depth streaming. */
     ros::param::param<bool>("~depth_enable",settings.structureCore.depthEnabled,false);
     ros::param::param<bool>("~ir_enable",settings.structureCore.infraredEnabled,false);
@@ -454,40 +454,68 @@ int main(int argc, char **argv) {
     /** @brief The target resolution for streamed depth frames. @see StructureCoreDepthResolution */
     settings.structureCore.depthResolution = ST::StructureCoreDepthResolution::SXGA;
     /** @brief The preset depth range mode for streamed depth frames. Modifies the min/max range of the depth values. */
-    settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::Long;
+    settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::Hybrid;
     /** @brief The target resolution for streamed depth frames. @see StructureCoreInfraredResolution
         Non-default infrared and visible resolutions are currently unavailable.
     */
+    settings.structureCore.dynamicCalibrationMode = ST::StructureCoreDynamicCalibrationMode::ContinuousNonPersistent;
+
     settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::Default;
     /** @brief The target resolution for streamed visible frames. @see StructureCoreVisibleResolution
         Non-default infrared and visible resolutions are currently unavailable.
     */
-    settings.structureCore.visibleResolution = ST::StructureCoreVisibleResolution::Default;
+    settings.structureCore.imuUpdateRate = ST::StructureCoreIMUUpdateRate::AccelAndGyro_100Hz;
+
+    settings.structureCore.visibleResolution = ST::StructureCoreVisibleResolution::_640x480;
     /** @brief Set to true to apply gamma correction to incoming visible frames. */
     settings.structureCore.visibleApplyGammaCorrection = true;
 
     /** @brief Specifies how to stream the infrared frames. @see StructureCoreInfraredMode */
     settings.structureCore.infraredMode = ST::StructureCoreInfraredMode::BothCameras;
     /** @brief The target stream rate for IMU data. (gyro and accel) */
-    settings.structureCore.imuUpdateRate = ST::StructureCoreIMUUpdateRate::Default;
     /** @brief Serial number of sensor to stream. If null, the first connected sensor will be used. */
     settings.structureCore.sensorSerial = nullptr;
     /** @brief Maximum amount of time (in milliseconds) to wait for a sensor to connect before throwing a timeout error. */
     settings.structureCore.sensorInitializationTimeout = 6000;
-    /** @brief The target framerate for the infrared camera. If the value is not supported, the default is 30. */
-    settings.structureCore.infraredFramerate = 30.f;
-    /** @brief The target framerate for the depth sensor. If the value is not supported, the default is 30. */
-    settings.structureCore.depthFramerate    = 30.f;
-    /** @brief The target framerate for the visible camera. If the value is not supported, the default is 30. */
-    settings.structureCore.visibleFramerate  = 30.f;
-    /** @brief The initial visible exposure to start streaming with (milliseconds, but set in seconds). */
-    settings.structureCore.initialVisibleExposure = 0.015f;
-    /** @brief The initial visible gain to start streaming with. Can be any number between 1 and 8. */
-    settings.structureCore.initialVisibleGain = 2.0f;
-    /** @brief The initial infrared exposure to start streaming with. */
-    settings.structureCore.initialInfraredExposure = 0.033f;
+
+    //settings.structureCore.infraredFramerate = 1.f;
+    //settings.structureCore.depthFramerate    = 1.f;
+    //settings.structureCore.visibleFramerate  = 1.f;
+
+
+
+    double Framerate_double = 30.0;
+    ros::param::param<double>("~Framerate",Framerate_double,30.0);
+    ros::param::param<double>("~Framerate",Framerate_double,30.0);
+    ros::param::param<double>("~Framerate",Framerate_double,30.0);
+
+    settings.structureCore.infraredFramerate = (float) Framerate_double;
+    settings.structureCore.depthFramerate = (float) Framerate_double;
+    settings.structureCore.visibleFramerate = (float) Framerate_double;
+
+    ROS_INFO_STREAM("Framerate :  " << settings.structureCore.infraredFramerate);
+
+
+
+
+    double initialVisibleExposure_double = 0.015;
+    double initialVisibleGain_double = 3.0;
+    double initialInfraredExposure_double = 0.015;
+
+    ros::param::param<double>("~initialVisibleExposure",initialVisibleExposure_double,0.015);
+    settings.structureCore.initialVisibleExposure = (float) initialVisibleExposure_double;
+
+    ros::param::param<double>("~initialVisibleGain",initialVisibleGain_double,3.0);
+    settings.structureCore.initialVisibleGain = (float) initialVisibleGain_double;
+
+    ros::param::param<double>("~initialInfraredExposure",initialInfraredExposure_double,0.015);
+    settings.structureCore.initialInfraredExposure = (float) initialInfraredExposure_double;
+
     /** @brief The initial infrared gain to start streaming with. Can be 0, 1, 2, or 3. */
-    settings.structureCore.initialInfraredGain = 2.0f;
+    //settings.structureCore.initialInfraredGain = 3.0f;
+    ros::param::param<int>("~initialInfraredGain",settings.structureCore.initialInfraredGain,3);
+    ROS_INFO_STREAM("initialInfraredGain :  " << settings.structureCore.initialInfraredGain);
+
     /** @brief Setting this to true will eliminate saturation issues, but might result in sparser depth. */
     settings.structureCore.disableInfraredIntensityBalance = true;
     /** @brief Setting this to true will reduce latency, but might drop more frame */
