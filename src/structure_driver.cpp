@@ -284,7 +284,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
       		imu_.header.frame_id = DEFAULT_FRAME_ID;
           //imu_.header.stamp = timestamp;
       		// TODO: fuse accel and gyro
-      		//imu_pub_.publish(imu_);
+      		imu_pub_.publish(imu_);
       	}
 
         void handleAccel(const ST::AccelerometerEvent &accelEvent)
@@ -451,10 +451,56 @@ int main(int argc, char **argv) {
     ros::param::param<bool>("~acc_enable",settings.structureCore.accelerometerEnabled,false);
     ros::param::param<bool>("~gyro_enable",settings.structureCore.gyroscopeEnabled,false);
 
+
+
+    int param_depthres = 1;
+    ros::param::param<int>("~configuration_res",param_depthres,1);
+    switch(param_depthres) {
+      case 1 :
+        settings.structureCore.depthResolution = ST::StructureCoreDepthResolution::QVGA;
+        break;
+      case 2 :
+        settings.structureCore.depthResolution = ST::StructureCoreDepthResolution::VGA;
+        break;
+      case 3 :
+        settings.structureCore.depthResolution = ST::StructureCoreDepthResolution::SXGA;
+        break;
+      default : settings.structureCore.depthResolution = ST::StructureCoreDepthResolution::Default;
+    }
+
+
+    int depthRangeMode = 1;
+    ros::param::param<int>("~configuration_mode",depthRangeMode,1);
+    switch(depthRangeMode) {
+      case 1 :
+        settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::VeryShort;
+        break;
+      case 2 :
+        settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::Short;
+        break;
+      case 3 :
+        settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::Medium;
+        break;
+      case 4 :
+        settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::Long;
+        break;
+      case 5 :
+        settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::VeryLong;
+        break;
+      case 6 :
+        settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::Hybrid;
+        break;
+      default :
+        settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::Default;
+        break;
+    }
+
     /** @brief The target resolution for streamed depth frames. @see StructureCoreDepthResolution */
-    settings.structureCore.depthResolution = ST::StructureCoreDepthResolution::SXGA;
+    //settings.structureCore.depthResolution = ST::StructureCoreDepthResolution::SXGA;
+
     /** @brief The preset depth range mode for streamed depth frames. Modifies the min/max range of the depth values. */
-    settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::Hybrid;
+    //settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::Hybrid;
+    //ros::param::param<std::string>("~depthRangeMode",settings.structureCore.depthRangeMode,ST::StructureCoreDepthRangeMode::Hybrid);
     /** @brief The target resolution for streamed depth frames. @see StructureCoreInfraredResolution
         Non-default infrared and visible resolutions are currently unavailable.
     */
@@ -514,7 +560,6 @@ int main(int argc, char **argv) {
     /** @brief The initial infrared gain to start streaming with. Can be 0, 1, 2, or 3. */
     //settings.structureCore.initialInfraredGain = 3.0f;
     ros::param::param<int>("~initialInfraredGain",settings.structureCore.initialInfraredGain,3);
-    ROS_INFO_STREAM("initialInfraredGain :  " << settings.structureCore.initialInfraredGain);
 
     /** @brief Setting this to true will eliminate saturation issues, but might result in sparser depth. */
     settings.structureCore.disableInfraredIntensityBalance = true;
