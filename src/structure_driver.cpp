@@ -16,6 +16,7 @@
 
 #define DEFAULT_FRAME_ID 	"imu"
 
+double timenow;
 
 class SessionDelegate : public ST::CaptureSessionDelegate {
     private:
@@ -52,7 +53,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
             sensor_msgs::ImagePtr msg(new sensor_msgs::Image);
 
             msg->header.frame_id = frame_id;
-            msg->header.stamp.fromSec(f.timestamp());
+            msg->header.stamp.fromSec(f.timestamp() + timenow);
 
             msg->encoding = "16UC1";
             msg->height = f.height();
@@ -81,7 +82,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
         {
           sensor_msgs::CameraInfoPtr info(new sensor_msgs::CameraInfo);
           info->header.frame_id = frame_id;
-          info->header.stamp.fromSec(f.timestamp());
+          info->header.stamp.fromSec(f.timestamp() + timenow);
           info->height = f.intrinsics().height;
           info->width = f.intrinsics().width/width_scale;
           info->distortion_model = "plumb_bob";
@@ -102,9 +103,8 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
         sensor_msgs::ImagePtr imageFromVisibleFrame(const std::string& frame_id, const ST::ColorFrame& f)
         {
             sensor_msgs::ImagePtr msg(new sensor_msgs::Image);
-
             msg->header.frame_id = frame_id;
-            msg->header.stamp.fromSec(f.timestamp());
+            msg->header.stamp.fromSec(f.timestamp() + timenow);
 
             int num_channels = f.rgbSize()/(f.width()*f.height());
 
@@ -132,7 +132,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
             sensor_msgs::ImagePtr right(new sensor_msgs::Image);
             right->header.frame_id = right_frame_id;
-            right->header.stamp.fromSec(f.timestamp());
+            right->header.stamp.fromSec(f.timestamp() + timenow);
 
             right->encoding = "mono16";
             right->height = f.height();
@@ -145,7 +145,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
             sensor_msgs::ImagePtr left(new sensor_msgs::Image);
             left->header.frame_id = left_frame_id;
-            left->header.stamp.fromSec(f.timestamp());
+            left->header.stamp.fromSec(f.timestamp() + timenow);
 
             left->encoding = "mono16";
             left->height = f.height();
@@ -235,7 +235,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
             sensor_msgs::ImagePtr msg(new sensor_msgs::Image);
             msg->header.frame_id = "camera_visible_optical_frame";
-            msg->header.stamp.fromSec(depth.timestamp());
+            msg->header.stamp.fromSec(depth.timestamp() + timenow);
             msg->encoding = "16UC1";
             msg->height = visual.height();
             msg->width = visual.width();
@@ -259,7 +259,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
             sensor_msgs::ImagePtr msg(new sensor_msgs::Image);
             msg->header.frame_id = "camera_depth_optical_frame";
-            msg->header.stamp.fromSec(depth.timestamp());
+            msg->header.stamp.fromSec(depth.timestamp() + timenow);
             msg->encoding = "16UC1";
             msg->height = ir.height();
             msg->width = ir.width()/2;
@@ -294,9 +294,11 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
           imu_.linear_acceleration.x = accelEvent.acceleration().x;
           imu_.linear_acceleration.y = accelEvent.acceleration().y;
           imu_.linear_acceleration.z = accelEvent.acceleration().z;
-          imu_.header.stamp = ros::Time::now();//accelEvent.timestamp();
+          //imu_.header.stamp = ros::Time::now();//accelEvent.timestamp();
+          imu_.header.stamp.fromSec(accelEvent.timestamp()+ timenow);//  ;
           //printf("Accelerometer event: [% .5f % .5f % .5f]\n", imu_.linear_acceleration.x, imu_.linear_acceleration.y, imu_.linear_acceleration.z);
           //publishIMU(accelEvent.timestamp());
+
           publishIMU();
           //publishIMU(accelEvent.timestamp());
         }
@@ -308,8 +310,10 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
           imu_.angular_velocity.x = gyroEvent.rotationRate().x;
           imu_.angular_velocity.y = gyroEvent.rotationRate().y;
           imu_.angular_velocity.z = gyroEvent.rotationRate().z;
-          imu_.header.stamp = ros::Time::now();//accelEvent.timestamp();
-          //imu.header.stamp = gyroEvent.timestamp();
+          //imu_.header.stamp = ros::Time::now();//accelEvent.timestamp();
+          //imu_.header.stamp.sec = (int)gyroEvent.timestamp();
+          //imu_.header.stamp.nsec = (int)((gyroEvent.timestamp() - imu_.header.stamp.sec)*1e9 );
+          imu_.header.stamp.fromSec(gyroEvent.timestamp()+ timenow);// + timenow;
           //publishIMU(gyroEvent.timestamp());
           publishIMU();
           //printf("Gyroscope event: [% .5f % .5f % .5f          imu.header.stamp = accelEvent.timestamp();]\n", gyroEvent.rotationRate().x, gyroEvent.rotationRate().y, gyroEvent.rotationRate().z);
@@ -431,6 +435,7 @@ int main(int argc, char **argv) {
 
     ros::init(argc, argv, "structure_driver");
 
+
     ros::NodeHandle n;
 
     ros::NodeHandle pnh("~");
@@ -504,13 +509,26 @@ int main(int argc, char **argv) {
     /** @brief The target resolution for streamed depth frames. @see StructureCoreInfraredResolution
         Non-default infrared and visible resolutions are currently unavailable.
     */
-    settings.structureCore.dynamicCalibrationMode = ST::StructureCoreDynamicCalibrationMode::ContinuousNonPersistent;
+    /*
+    bool dynamic_calibration_param = true;
+    ros::param::param<bool>("~dynamic_calibration",dynamic_calibration_param,true);
+    switch(dynamic_calibration_param) {
+      case true :
+        settings.structureCore.dynamicCalibrationMode = ST::StructureCoreDynamicCalibrationMode::ContinuousNonPersistent;
+        break;
+      default :
+        settings.structureCore.dynamicCalibrationMode = ST::StructureCoreDynamicCalibrationMode::Off;
+        break;
+    }
+    */
+    //settings.structureCore.dynamicCalibrationMode = ST::StructureCoreDynamicCalibrationMode::ContinuousNonPersistent;
+    settings.structureCore.dynamicCalibrationMode = ST::StructureCoreDynamicCalibrationMode::Off;
 
     settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::Default;
     /** @brief The target resolution for streamed visible frames. @see StructureCoreVisibleResolution
         Non-default infrared and visible resolutions are currently unavailable.
     */
-    settings.structureCore.imuUpdateRate = ST::StructureCoreIMUUpdateRate::AccelAndGyro_100Hz;
+    settings.structureCore.imuUpdateRate = ST::StructureCoreIMUUpdateRate::AccelAndGyro_1000Hz;
 
     settings.structureCore.visibleResolution = ST::StructureCoreVisibleResolution::_640x480;
     /** @brief Set to true to apply gamma correction to incoming visible frames. */
@@ -567,6 +585,8 @@ int main(int argc, char **argv) {
     settings.structureCore.latencyReducerEnabled = true;
     /** @brief Laser projector power setting from 0.0 to 1.0 inclusive. Projector will only activate if required by streaming configuration. */
     settings.structureCore.initialProjectorPower = 1.0f;
+    //printf("%d,%d\n",time_begin.sec, time_begin.nsec);
+
 
     SessionDelegate delegate(n, pnh);
     ST::CaptureSession session;
@@ -579,6 +599,14 @@ int main(int argc, char **argv) {
     printf("Waiting for session to become ready...\n");
     delegate.waitUntilReady();
     session.startStreaming();
+
+
+    timenow = ros::Time::now().toSec();
+    //while loop which waits 2 sec to reload exposure and gain
+    while (ros::Time::now().toSec() - timenow < 2)  {
+    };
+
+    session.setInfraredCamerasExposureAndGain((float) settings.structureCore.initialInfraredExposure,(float) settings.structureCore.initialInfraredGain);
 
     ros::spin();
 
