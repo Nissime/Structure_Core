@@ -16,8 +16,8 @@
 
 #define DEFAULT_FRAME_ID 	"imu"
 
-double timenow;
-
+double timenow; // initial time of the system
+double dt = 0; // initial time of the sensor
 class SessionDelegate : public ST::CaptureSessionDelegate {
     private:
         std::mutex lock;
@@ -53,7 +53,10 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
             sensor_msgs::ImagePtr msg(new sensor_msgs::Image);
 
             msg->header.frame_id = frame_id;
-            msg->header.stamp.fromSec(f.timestamp() + timenow);
+            if (dt==0) {
+              dt = f.timestamp();
+            }
+            msg->header.stamp.fromSec(f.timestamp() - dt + timenow);
 
             msg->encoding = "16UC1";
             msg->height = f.height();
@@ -82,7 +85,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
         {
           sensor_msgs::CameraInfoPtr info(new sensor_msgs::CameraInfo);
           info->header.frame_id = frame_id;
-          info->header.stamp.fromSec(f.timestamp() + timenow);
+          info->header.stamp.fromSec(f.timestamp() - dt + timenow);
           info->height = f.intrinsics().height;
           info->width = f.intrinsics().width/width_scale;
           info->distortion_model = "plumb_bob";
@@ -104,7 +107,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
         {
             sensor_msgs::ImagePtr msg(new sensor_msgs::Image);
             msg->header.frame_id = frame_id;
-            msg->header.stamp.fromSec(f.timestamp() + timenow);
+            msg->header.stamp.fromSec(f.timestamp() - dt + timenow);
 
             int num_channels = f.rgbSize()/(f.width()*f.height());
 
@@ -132,7 +135,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
             sensor_msgs::ImagePtr right(new sensor_msgs::Image);
             right->header.frame_id = right_frame_id;
-            right->header.stamp.fromSec(f.timestamp() + timenow);
+            right->header.stamp.fromSec(f.timestamp() - dt + timenow);
 
             right->encoding = "mono16";
             right->height = f.height();
@@ -145,7 +148,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
             sensor_msgs::ImagePtr left(new sensor_msgs::Image);
             left->header.frame_id = left_frame_id;
-            left->header.stamp.fromSec(f.timestamp() + timenow);
+            left->header.stamp.fromSec(f.timestamp() - dt + timenow);
 
             left->encoding = "mono16";
             left->height = f.height();
@@ -235,7 +238,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
             sensor_msgs::ImagePtr msg(new sensor_msgs::Image);
             msg->header.frame_id = "camera_visible_optical_frame";
-            msg->header.stamp.fromSec(depth.timestamp() + timenow);
+            msg->header.stamp.fromSec(depth.timestamp() - dt + timenow);
             msg->encoding = "16UC1";
             msg->height = visual.height();
             msg->width = visual.width();
@@ -259,7 +262,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
             sensor_msgs::ImagePtr msg(new sensor_msgs::Image);
             msg->header.frame_id = "camera_depth_optical_frame";
-            msg->header.stamp.fromSec(depth.timestamp() + timenow);
+            msg->header.stamp.fromSec(depth.timestamp() - dt + timenow);
             msg->encoding = "16UC1";
             msg->height = ir.height();
             msg->width = ir.width()/2;
@@ -295,7 +298,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
           imu_.linear_acceleration.y = accelEvent.acceleration().y;
           imu_.linear_acceleration.z = accelEvent.acceleration().z;
           //imu_.header.stamp = ros::Time::now();//accelEvent.timestamp();
-          imu_.header.stamp.fromSec(accelEvent.timestamp()+ timenow);//  ;
+          imu_.header.stamp.fromSec(accelEvent.timestamp() - dt + timenow);//  ;
           //printf("Accelerometer event: [% .5f % .5f % .5f]\n", imu_.linear_acceleration.x, imu_.linear_acceleration.y, imu_.linear_acceleration.z);
           //publishIMU(accelEvent.timestamp());
 
@@ -313,7 +316,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
           //imu_.header.stamp = ros::Time::now();//accelEvent.timestamp();
           //imu_.header.stamp.sec = (int)gyroEvent.timestamp();
           //imu_.header.stamp.nsec = (int)((gyroEvent.timestamp() - imu_.header.stamp.sec)*1e9 );
-          imu_.header.stamp.fromSec(gyroEvent.timestamp()+ timenow);// + timenow;
+          imu_.header.stamp.fromSec(gyroEvent.timestamp() -dt + timenow);// + timenow;
           //publishIMU(gyroEvent.timestamp());
           publishIMU();
           //printf("Gyroscope event: [% .5f % .5f % .5f          imu.header.stamp = accelEvent.timestamp();]\n", gyroEvent.rotationRate().x, gyroEvent.rotationRate().y, gyroEvent.rotationRate().z);
@@ -528,7 +531,7 @@ int main(int argc, char **argv) {
     /** @brief The target resolution for streamed visible frames. @see StructureCoreVisibleResolution
         Non-default infrared and visible resolutions are currently unavailable.
     */
-    settings.structureCore.imuUpdateRate = ST::StructureCoreIMUUpdateRate::AccelAndGyro_1000Hz;
+    settings.structureCore.imuUpdateRate = ST::StructureCoreIMUUpdateRate::AccelAndGyro_100Hz;
 
     settings.structureCore.visibleResolution = ST::StructureCoreVisibleResolution::_640x480;
     /** @brief Set to true to apply gamma correction to incoming visible frames. */
