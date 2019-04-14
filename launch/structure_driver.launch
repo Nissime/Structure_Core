@@ -5,11 +5,21 @@
 
 	<rosparam command="load" file="$(find structure_core)/launch/structure_prameters.yaml"/>
 	<node pkg="structure_core" type="structure_driver" name="structure_driver" output="screen"/>
-	<node pkg ="tf" type="static_transform_publisher" name="pcl2baselink" args="0 0 0 1.57079632679 0 0 base_link camera_depth_optical_frame 100" />
-	<node pkg ="tf" type="static_transform_publisher" name="imu2baselink" args="0 0 0 0 0 0 base_link imu 100" />
+	<node pkg ="tf" type="static_transform_publisher" name="pcl2baselink" args="0 0 0 -1.57079632679 0 -1.57079632679 base_link camera_depth_optical_frame 100" />
+	<node pkg ="tf" type="static_transform_publisher" name="imu2baselink" args="0 0 0 0 -1.57079632679 0 base_link imu 10" />
 	<!--node pkg ="tf" type="static_transform_publisher" name="imu2baselink" args="0 0 0 3.1415 1.57 0 base_link imu 1000" /-->
+	<node pkg ="tf" type="static_transform_publisher" name="bl2camera_visible" args="0 0 0 0 1.57079632679 0 base_link camera_visible_optical_frame 100" />
 
 	<node pkg="nodelet" type="nodelet" args="manager" name="record_player_manager" output="screen"/>
+
+
+	<node pkg="imu_complementary_filter" type="complementary_filter_node" name="complementary_filter">
+		 <remap from="imu/data_raw" to="imu_node/imu"/>
+		 <remap from="imu/data" to="/imu"/>
+	</node>
+
+
+<node pkg="rostopic" type="rostopic" name="clock" args="pub -s -r 100 /clock rosgraph_msgs/Clock 'now'"/>
 
 	<node pkg="nodelet" type="nodelet" name="convert" args="load depth_image_proc/convert_metric record_player_manager --no-bond" >
 		<remap from="image_raw" to="/depth/image"/>
@@ -32,7 +42,7 @@
 			args="record -o ../catkin_ws/records/ /tf /tf_static
 			/left/image_raw /left/camera_info /right/image_raw
 			/right/camera_info /imu_node/imu /depth/camera_info
-			/depth/image /visible/camera_info /visible/image_raw"  output = "screen"/>
+			/depth/image /visible/camera_info /visible/image_rect /clock"  output = "screen"/>
 		</group>
 
 		<!-- Convenience launch file to launch odometry, rtabmap and rtabmapviz nodes at once -->
