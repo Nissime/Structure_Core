@@ -16,6 +16,8 @@
 
 #define DEFAULT_FRAME_ID 	"imu"
 
+bool Flag_Acc = false;
+bool Flag_Gyro = false;
 double timenow; // initial time of the system
 double dt = 0; // initial time of the sensor
 class SessionDelegate : public ST::CaptureSessionDelegate {
@@ -287,13 +289,18 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
       		imu_.header.frame_id = DEFAULT_FRAME_ID;
           //imu_.header.stamp = timestamp;
       		// TODO: fuse accel and gyro
-      		imu_pub_.publish(imu_);
+          if (Flag_Acc && Flag_Gyro) {
+            imu_pub_.publish(imu_);
+            Flag_Acc = false;
+            Flag_Gyro = false;
+          }
+
       	}
 
         void handleAccel(const ST::AccelerometerEvent &accelEvent)
         {
           ROS_DEBUG_STREAM_THROTTLE(1.0, "Structure_Core_Node" << ": handleAccel");
-
+          Flag_Acc = true;
           imu_.linear_acceleration.x = accelEvent.acceleration().x;
           imu_.linear_acceleration.y = accelEvent.acceleration().y;
           imu_.linear_acceleration.z = accelEvent.acceleration().z;
@@ -309,7 +316,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
         void handleGyro(const ST::GyroscopeEvent &gyroEvent)
         {
           ROS_DEBUG_STREAM_THROTTLE(1.0, "Structure_Core_Node" << ": handleGyro");
-
+          Flag_Gyro = true;
           imu_.angular_velocity.x = gyroEvent.rotationRate().x;
           imu_.angular_velocity.y = gyroEvent.rotationRate().y;
           imu_.angular_velocity.z = gyroEvent.rotationRate().z;
@@ -606,7 +613,7 @@ int main(int argc, char **argv) {
 
     timenow = ros::Time::now().toSec();
     //while loop which waits 2 sec to reload exposure and gain
-    while (ros::Time::now().toSec() - timenow < 2)  {
+    while (ros::Time::now().toSec() - timenow < 0.5)  {
     };
 
     session.setInfraredCamerasExposureAndGain((float) settings.structureCore.initialInfraredExposure,(float) settings.structureCore.initialInfraredGain);
