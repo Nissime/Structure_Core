@@ -456,7 +456,7 @@ int main(int argc, char **argv) {
     settings.applyExpensiveCorrection = true;//ST::DepthFrame::applyExpensiveCorrection::True;
     /** @brief Set to true to enable depth streaming. */
     ros::param::param<bool>("~depth_enable",settings.structureCore.depthEnabled,false);
-    ros::param::param<bool>("~ir_enable",settings.structureCore.infraredEnabled,false);
+//    ros::param::param<bool>("~ir_enable",settings.structureCore.infraredEnabled,false);
     ros::param::param<bool>("~vis_enable",settings.structureCore.visibleEnabled,false);
     ROS_INFO_STREAM("vis_enable :  " << settings.structureCore.visibleEnabled);
     ros::param::param<bool>("~acc_enable",settings.structureCore.accelerometerEnabled,false);
@@ -465,7 +465,7 @@ int main(int argc, char **argv) {
 
 
     int param_depthres = 1;
-    ros::param::param<int>("~configuration_res",param_depthres,1);
+    ros::param::param<int>("~configuration_res_depth",param_depthres,1);
     switch(param_depthres) {
       case 1 :
         settings.structureCore.depthResolution = ST::StructureCoreDepthResolution::QVGA;
@@ -481,7 +481,7 @@ int main(int argc, char **argv) {
 
 
     int depthRangeMode = 1;
-    ros::param::param<int>("~configuration_mode",depthRangeMode,1);
+    ros::param::param<int>("~configuration_mode_depth",depthRangeMode,1);
     switch(depthRangeMode) {
       case 1 :
         settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::VeryShort;
@@ -506,42 +506,80 @@ int main(int argc, char **argv) {
         break;
     }
 
-    /** @brief The target resolution for streamed depth frames. @see StructureCoreDepthResolution */
-    //settings.structureCore.depthResolution = ST::StructureCoreDepthResolution::SXGA;
 
-    /** @brief The preset depth range mode for streamed depth frames. Modifies the min/max range of the depth values. */
-    //settings.structureCore.depthRangeMode = ST::StructureCoreDepthRangeMode::Hybrid;
-    //ros::param::param<std::string>("~depthRangeMode",settings.structureCore.depthRangeMode,ST::StructureCoreDepthRangeMode::Hybrid);
-    /** @brief The target resolution for streamed depth frames. @see StructureCoreInfraredResolution
-        Non-default infrared and visible resolutions are currently unavailable.
-    */
-    /*
-    bool dynamic_calibration_param = true;
-    ros::param::param<bool>("~dynamic_calibration",dynamic_calibration_param,true);
+ 
+    int dynamic_calibration_param = 1;
+    ros::param::param<int>("~dynamic_calibration",dynamic_calibration_param,1);
     switch(dynamic_calibration_param) {
-      case true :
+      case 1 :
+        settings.structureCore.dynamicCalibrationMode = ST::StructureCoreDynamicCalibrationMode::Off;
+        break;
+      case 2 :
+        settings.structureCore.dynamicCalibrationMode = ST::StructureCoreDynamicCalibrationMode::OneShotPersistent;
+        break;
+      case 3 :
         settings.structureCore.dynamicCalibrationMode = ST::StructureCoreDynamicCalibrationMode::ContinuousNonPersistent;
         break;
       default :
         settings.structureCore.dynamicCalibrationMode = ST::StructureCoreDynamicCalibrationMode::Off;
         break;
     }
-    */
-    //settings.structureCore.dynamicCalibrationMode = ST::StructureCoreDynamicCalibrationMode::ContinuousNonPersistent;
-    settings.structureCore.dynamicCalibrationMode = ST::StructureCoreDynamicCalibrationMode::Off;
+   
 
-    settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::Default;
-    /** @brief The target resolution for streamed visible frames. @see StructureCoreVisibleResolution
-        Non-default infrared and visible resolutions are currently unavailable.
-    */
-    settings.structureCore.imuUpdateRate = ST::StructureCoreIMUUpdateRate::AccelAndGyro_100Hz;
+    int infra_red_mode = 0;
+    ros::param::param<int>("~infra_red_mode",infra_red_mode,0);
+    switch(infra_red_mode) {
+      case 0 :
+	settings.structureCore.infraredEnabled = false;
+        break;
+      case 1 :
+	settings.structureCore.infraredEnabled = true;
+        settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::Default;
+        settings.structureCore.infraredMode = ST::StructureCoreInfraredMode::BothCameras;
+        break;
+      case 2 :
+	settings.structureCore.infraredEnabled = true;
+        settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::Default;
+        settings.structureCore.infraredMode =  ST::StructureCoreInfraredMode::LeftCameraOnly;
+        break;
+      case 3 :
+	settings.structureCore.infraredEnabled = true;
+        settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::Default;
+        settings.structureCore.infraredMode =  ST::StructureCoreInfraredMode::RightCameraOnly;
+        break;
+      default :
+	settings.structureCore.infraredEnabled = false;
+        break;
+    }
+
+
+    int imu_update_rate = 100;
+    ros::param::param<int>("~imu_update_rate",imu_update_rate,100);
+    switch(imu_update_rate) {
+      case 100 :
+        settings.structureCore.imuUpdateRate = ST::StructureCoreIMUUpdateRate::AccelAndGyro_100Hz;
+        break;
+      case 200 :
+        settings.structureCore.imuUpdateRate = ST::StructureCoreIMUUpdateRate::AccelAndGyro_200Hz;
+        break;
+      case 800 :
+        settings.structureCore.imuUpdateRate = ST::StructureCoreIMUUpdateRate::AccelAndGyro_800Hz;
+        break;
+      case 1000 :
+        settings.structureCore.imuUpdateRate = ST::StructureCoreIMUUpdateRate::AccelAndGyro_1000Hz;
+        break;
+      default :
+        settings.structureCore.imuUpdateRate = ST::StructureCoreIMUUpdateRate::AccelAndGyro_100Hz;
+        break;
+    }
+
+
 
     settings.structureCore.visibleResolution = ST::StructureCoreVisibleResolution::_640x480;
     /** @brief Set to true to apply gamma correction to incoming visible frames. */
     settings.structureCore.visibleApplyGammaCorrection = true;
 
-    /** @brief Specifies how to stream the infrared frames. @see StructureCoreInfraredMode */
-    settings.structureCore.infraredMode = ST::StructureCoreInfraredMode::BothCameras;
+
     /** @brief The target stream rate for IMU data. (gyro and accel) */
     /** @brief Serial number of sensor to stream. If null, the first connected sensor will be used. */
     settings.structureCore.sensorSerial = nullptr;
@@ -555,8 +593,6 @@ int main(int argc, char **argv) {
 
 
     double Framerate_double = 30.0;
-    ros::param::param<double>("~Framerate",Framerate_double,30.0);
-    ros::param::param<double>("~Framerate",Framerate_double,30.0);
     ros::param::param<double>("~Framerate",Framerate_double,30.0);
 
     settings.structureCore.infraredFramerate = (float) Framerate_double;
