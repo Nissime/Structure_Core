@@ -9,6 +9,7 @@ structure_driver:
   #frame rates
   Framerate: 20.0
 
+
   #exposure time and gain
   initialVisibleExposure: 0.020
   initialVisibleGain: 1.0
