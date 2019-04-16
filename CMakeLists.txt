@@ -114,6 +114,7 @@ find_library(STRUCTURE_LIB Structure HINTS "lib")
 message("========================" ${STRUCTURE_LIB})
 
 
+
 find_package(Eigen3 QUIET)
 if(NOT EIGEN3_FOUND)
   find_package(Eigen REQUIRED)

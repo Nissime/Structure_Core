@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include <ST/CaptureSession.h>
+#include <ST/Utilities.h>
 #include "register.hpp"
 
 #include <ros/ros.h>
@@ -18,8 +19,10 @@
 
 bool Flag_Acc = false;
 bool Flag_Gyro = false;
-double timenow; // initial time of the system
+double timenow = 0; // initial time of the system
 double dt = 0; // initial time of the sensor
+double biasT = 0; // bias between sensor time and ros time
+double const g2ms2 = 9.81;
 class SessionDelegate : public ST::CaptureSessionDelegate {
     private:
         std::mutex lock;
@@ -55,10 +58,17 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
             sensor_msgs::ImagePtr msg(new sensor_msgs::Image);
 
             msg->header.frame_id = frame_id;
+/*
             if (dt==0) {
               dt = f.timestamp();
+	      timenow = ros::Time::now().toSec();
+	      timenow2 = ST::getTimestampNow();	
+              printf("====================>>>>>    %lf,%lf,%lf \n",timenow,timenow2,dt);
+
             }
-            msg->header.stamp.fromSec(f.timestamp() - dt + timenow);
+*/
+
+            msg->header.stamp.fromSec(f.timestamp()  + biasT);
 
             msg->encoding = "16UC1";
             msg->height = f.height();
@@ -87,7 +97,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
         {
           sensor_msgs::CameraInfoPtr info(new sensor_msgs::CameraInfo);
           info->header.frame_id = frame_id;
-          info->header.stamp.fromSec(f.timestamp() - dt + timenow);
+          info->header.stamp.fromSec(f.timestamp()  + biasT);
           info->height = f.intrinsics().height;
           info->width = f.intrinsics().width/width_scale;
           info->distortion_model = "plumb_bob";
@@ -109,7 +119,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
         {
             sensor_msgs::ImagePtr msg(new sensor_msgs::Image);
             msg->header.frame_id = frame_id;
-            msg->header.stamp.fromSec(f.timestamp() - dt + timenow);
+            msg->header.stamp.fromSec(f.timestamp()  + biasT);
 
             int num_channels = f.rgbSize()/(f.width()*f.height());
 
@@ -137,7 +147,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
             sensor_msgs::ImagePtr right(new sensor_msgs::Image);
             right->header.frame_id = right_frame_id;
-            right->header.stamp.fromSec(f.timestamp() - dt + timenow);
+            right->header.stamp.fromSec(f.timestamp()  + biasT);
 
             right->encoding = "mono16";
             right->height = f.height();
@@ -150,7 +160,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
             sensor_msgs::ImagePtr left(new sensor_msgs::Image);
             left->header.frame_id = left_frame_id;
-            left->header.stamp.fromSec(f.timestamp() - dt + timenow);
+            left->header.stamp.fromSec(f.timestamp()  + biasT);
 
             left->encoding = "mono16";
             left->height = f.height();
@@ -240,7 +250,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
             sensor_msgs::ImagePtr msg(new sensor_msgs::Image);
             msg->header.frame_id = "camera_visible_optical_frame";
-            msg->header.stamp.fromSec(depth.timestamp() - dt + timenow);
+            msg->header.stamp.fromSec(depth.timestamp()  + biasT);
             msg->encoding = "16UC1";
             msg->height = visual.height();
             msg->width = visual.width();
@@ -264,7 +274,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
             sensor_msgs::ImagePtr msg(new sensor_msgs::Image);
             msg->header.frame_id = "camera_depth_optical_frame";
-            msg->header.stamp.fromSec(depth.timestamp() - dt + timenow);
+            msg->header.stamp.fromSec(depth.timestamp()  + biasT);
             msg->encoding = "16UC1";
             msg->height = ir.height();
             msg->width = ir.width()/2;
@@ -283,12 +293,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
         void publishIMU()
       	{
-          //sensor_msgs::Imu msg(new sensor_msgs::Image);
-      		// TODO: convert timstamp to ROS time
-      		// header.stamp =  timestamp();
-      		imu_.header.frame_id = DEFAULT_FRAME_ID;
-          //imu_.header.stamp = timestamp;
-      		// TODO: fuse accel and gyro
+      	  imu_.header.frame_id = DEFAULT_FRAME_ID;
           if (Flag_Acc && Flag_Gyro) {
             imu_pub_.publish(imu_);
             Flag_Acc = false;
@@ -301,16 +306,13 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
         {
           ROS_DEBUG_STREAM_THROTTLE(1.0, "Structure_Core_Node" << ": handleAccel");
           Flag_Acc = true;
-          imu_.linear_acceleration.x = accelEvent.acceleration().x;
-          imu_.linear_acceleration.y = accelEvent.acceleration().y;
-          imu_.linear_acceleration.z = accelEvent.acceleration().z;
-          //imu_.header.stamp = ros::Time::now();//accelEvent.timestamp();
-          imu_.header.stamp.fromSec(accelEvent.timestamp() - dt + timenow);//  ;
-          //printf("Accelerometer event: [% .5f % .5f % .5f]\n", imu_.linear_acceleration.x, imu_.linear_acceleration.y, imu_.linear_acceleration.z);
-          //publishIMU(accelEvent.timestamp());
+          imu_.linear_acceleration.x = accelEvent.acceleration().x * g2ms2;
+          imu_.linear_acceleration.y = accelEvent.acceleration().y * g2ms2;
+          imu_.linear_acceleration.z = accelEvent.acceleration().z * g2ms2;
+
+          imu_.header.stamp.fromSec(accelEvent.timestamp()  + biasT);
 
           publishIMU();
-          //publishIMU(accelEvent.timestamp());
         }
 
         void handleGyro(const ST::GyroscopeEvent &gyroEvent)
@@ -320,17 +322,11 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
           imu_.angular_velocity.x = gyroEvent.rotationRate().x;
           imu_.angular_velocity.y = gyroEvent.rotationRate().y;
           imu_.angular_velocity.z = gyroEvent.rotationRate().z;
-          //imu_.header.stamp = ros::Time::now();//accelEvent.timestamp();
-          //imu_.header.stamp.sec = (int)gyroEvent.timestamp();
-          //imu_.header.stamp.nsec = (int)((gyroEvent.timestamp() - imu_.header.stamp.sec)*1e9 );
-          imu_.header.stamp.fromSec(gyroEvent.timestamp() -dt + timenow);// + timenow;
-          //publishIMU(gyroEvent.timestamp());
+
+          imu_.header.stamp.fromSec(gyroEvent.timestamp() + biasT);
+
           publishIMU();
-          //printf("Gyroscope event: [% .5f % .5f % .5f          imu.header.stamp = accelEvent.timestamp();]\n", gyroEvent.rotationRate().x, gyroEvent.rotationRate().y, gyroEvent.rotationRate().z);
 
-
-
-          //publishIMU(accelEvent.timestamp());
         }
     public:
 
@@ -611,7 +607,14 @@ int main(int argc, char **argv) {
     session.startStreaming();
 
 
-    timenow = ros::Time::now().toSec();
+    if (dt==0) {
+      dt = ST::getTimestampNow();
+      timenow = ros::Time::now().toSec();
+      biasT = timenow - dt;      	
+      printf("====================>>>>> \n rosTime: %lf \n structureTime: %lf \n biasT: %lf \n ====================>>>>> \n ",timenow,dt,biasT);
+
+    }
+
     //while loop which waits 2 sec to reload exposure and gain
     while (ros::Time::now().toSec() - timenow < 0.5)  {
     };
