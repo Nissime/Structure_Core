@@ -19,21 +19,21 @@
 	</node>
 
 
-<node pkg="rostopic" type="rostopic" name="clock" args="pub -s -r 100 /clock rosgraph_msgs/Clock 'now'"/>
+  <node pkg="rostopic" type="rostopic" name="clock" args="pub -s -r 100 /clock rosgraph_msgs/Clock 'now'"/> 
 
-	<node pkg="nodelet" type="nodelet" name="convert" args="load depth_image_proc/convert_metric record_player_manager --no-bond" >
+<!--	<node pkg="nodelet" type="nodelet" name="convert" args="load depth_image_proc/convert_metric record_player_manager no-bond" >
 		<remap from="image_raw" to="/depth/image"/>
 		<remap from="image" to="/depth/image_f32"/>
-
-	</node>
+ 
+	</node> -->
 
 	<group ns="visible">
 	    <node pkg="image_proc" name="image_proc" type="image_proc" output="screen"/>
-	</group>
+	</group> 
 
 
 	<node pkg="nodelet" type="nodelet" name="cloudify_front" args="load depth_image_proc/point_cloud_xyz record_player_manager --no-bond" >
-		<remap from="image_rect" to="/depth/image_f32"/>
+		<remap from="image_rect" to="/depth/image"/>
 		<remap from="camera_info" to="/depth/camera_info"/>
 	</node >
 

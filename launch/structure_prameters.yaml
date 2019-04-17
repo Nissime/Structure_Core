@@ -16,12 +16,15 @@ structure_driver:
   initialInfraredExposure: 0.03
   initialInfraredGain: 1.0
 
-  #depthRangeMode: 'ST::StructureCoreDepthRangeMode::Hybrid'
-  configuration_res: 1
+  #imu rate (100,200,800,1000)
+  imu_update_rate: 1000
+
+  configuration_res_depth: 1
   # 1-QVGA
   # 2-VGA
   # 3-SXGA
-  configuration_mode: 7
+
+  configuration_mode_depth: 7
   #1 - VeryShort =  Estimated range of 0.35m to 0.92m
   #2 - Short =  Estimated range of 0.41m to 1.36m
   #3 - Medium 	=   Estimated range of 0.52m to 5.23m
@@ -29,3 +32,15 @@ structure_driver:
   #5 - VeryLong 	=   Estimated range of 0.58m to 10.0m
   #6 - Hybrid =   Estimated range of 0.35m to 10.0m
   #7 - Default =   Don't use a preset, use the provided configuration options.
+
+  infra_red_mode: 0
+  #0 - off
+  #1 - on, both cameras
+  #2 - on, left camera
+  #3 - on, right camera
+
+  dynamic_calibration: 1  # DO NOT CHANGE THIS NUMBER IF YOU ARE HAPPY WITH YOUR CALIBRATION!!!
+  #1 - Off
+
+
+
