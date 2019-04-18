@@ -1,90 +1,74 @@
 <?xml version="1.0"?>
 <launch>
 
-	<arg name="Record_Bag" default="false"/>
+	<arg name="Record_Bag" 			default="false"/>
+	<arg name="Stream_Ros" 			default="false"/>
+	<arg name="rviz"                   	default="true" />
+	<arg name="use_sim_time"	        default="false"/>
+	<arg name="rviz_cfg"          		default="$(find structure_core)/structure_core_rviz_cfg.rviz" />
+	<arg name="use_urdf" 			default="true"/>
+	<arg name="do_quat" 			default="false"/>
+
+	<param if="$(arg use_sim_time)" name="use_sim_time" value="true"/>
+
+	<!-- This can be used if more than one computer is used -->
+        <node if="$(arg Stream_Ros)" pkg="rostopic" type="rostopic" name="clock" args="pub -s -r 100 /clock rosgraph_msgs/Clock 'now'"/> 
 
 	<rosparam command="load" file="$(find structure_core)/launch/structure_prameters.yaml"/>
 	<node pkg="structure_core" type="structure_driver" name="structure_driver" output="screen"/>
-	<node pkg ="tf" type="static_transform_publisher" name="pcl2baselink" args="0 0 0 -1.57079632679 0 -1.57079632679 base_link camera_depth_optical_frame 100" />
-	<node pkg ="tf" type="static_transform_publisher" name="imu2baselink" args="0 0 0 0 -1.57079632679 0 base_link imu 10" />
-	<!--node pkg ="tf" type="static_transform_publisher" name="imu2baselink" args="0 0 0 3.1415 1.57 0 base_link imu 1000" /-->
-	<node pkg ="tf" type="static_transform_publisher" name="bl2camera_visible" args="0 0 0 0 1.57079632679 0 base_link camera_visible_optical_frame 100" />
+
+
+	<!-- For TFs use one time URDF or continuos TFs topics -->
+	<group if="$(arg use_urdf)">
+	 <param name="robot_description"  textfile="$(find structure_core)/launch/Structure.urdf" />
+	<node name="robot_state_publisher" pkg="robot_state_publisher"
+	    type="robot_state_publisher" />   
+	</group>
+
+	<group unless="$(arg use_urdf)">
+	 <node pkg ="tf" type="static_transform_publisher" name="pcl2baselink" args="0 0 0 -1.57079632679 0 -1.57079632679 base_link camera_depth_optical_frame 100" /> 
+	 <node pkg ="tf" type="static_transform_publisher" name="imu2baselink" args="0 0 0 0 0 0 base_link imu 10" /> 
+	 <node pkg ="tf" type="static_transform_publisher" name="bl2camera_visible" args="0 0 0 0 1.57079632679 0 base_link camera_visible_optical_frame 100" /> 
+	</group>
+
 
 	<node pkg="nodelet" type="nodelet" args="manager" name="record_player_manager" output="screen"/>
 
-
-	<node pkg="imu_complementary_filter" type="complementary_filter_node" name="complementary_filter">
+	<!-- This can be used if quaternions are needed -->
+ 	<node if="$(arg do_quat)" pkg="imu_complementary_filter" type="complementary_filter_node" name="complementary_filter">
 		 <remap from="imu/data_raw" to="imu_node/imu"/>
 		 <remap from="imu/data" to="/imu"/>
 	</node>
 
-
-  <node pkg="rostopic" type="rostopic" name="clock" args="pub -s -r 100 /clock rosgraph_msgs/Clock 'now'"/> 
-
-<!--	<node pkg="nodelet" type="nodelet" name="convert" args="load depth_image_proc/convert_metric record_player_manager no-bond" >
+	<!-- This can be used to convert image from uint16 (mm) to float32 (m) -->
+	<!--	<node pkg="nodelet" type="nodelet" name="convert" args="load depth_image_proc/convert_metric record_player_manager no-bond" >
 		<remap from="image_raw" to="/depth/image"/>
 		<remap from="image" to="/depth/image_f32"/>
  
 	</node> -->
 
+
+	<!-- rectify visible image -->
 	<group ns="visible">
 	    <node pkg="image_proc" name="image_proc" type="image_proc" output="screen"/>
 	</group> 
 
-
+	<!-- create pointcloud from depthmap, output: /points -->
 	<node pkg="nodelet" type="nodelet" name="cloudify_front" args="load depth_image_proc/point_cloud_xyz record_player_manager --no-bond" >
 		<remap from="image_rect" to="/depth/image"/>
 		<remap from="camera_info" to="/depth/camera_info"/>
 	</node >
 
-	<group if="$(arg Record_Bag)">
-		<node pkg="rosbag" type="record" name="rosbag_record_diag"
-			args="record -o ../catkin_ws/records/ /tf /tf_static
-			/left/image_raw /left/camera_info /right/image_raw
-			/right/camera_info /imu_node/imu /depth/camera_info
-			/depth/image /visible/camera_info /visible/image_rect /clock"  output = "screen"/>
-		</group>
+	<!-- This can be used if record is needed -->
+	<node if="$(arg Record_Bag)" pkg="rosbag" type="record" name="rosbag_record_diag"
+		args="record -o ../catkin_ws/records/ /tf /tf_static
+		/left/image_raw /left/camera_info /right/image_raw
+		/right/camera_info /imu_node/imu /depth/camera_info
+		/depth/image /visible/camera_info /visible/image_rect /clock"  output = "screen"/>
 
-		<!-- Convenience launch file to launch odometry, rtabmap and rtabmapviz nodes at once -->
 
-		<!-- For stereo:=false
-		Your RGB-D sensor should be already started with "depth_registration:=true".
-		Examples:
-		$ roslaunch freenect_launch freenect.launch depth_registration:=true
-		$ roslaunch openni2_launch openni2.launch depth_registration:=true -->
+	<!-- Visualization RVIZ -->
+	<node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(arg rviz_cfg)"/>
 
-		<!-- For stereo:=true
-		Your camera should be calibrated and publishing rectified left and right
-		images + corresponding camera_info msgs. You can use stereo_image_proc for image rectification.
-		Example:
-		$ roslaunch rtabmap_ros bumblebee.launch -->
-
-		<!-- Choose between RGB-D and stereo -->
-
-		<arg name="rviz"                    default="true" />
-		<arg name="localization"            default="false"/>
-		<arg name="use_sim_time"            default="false"/>
-		<param if="$(arg use_sim_time)" name="use_sim_time" value="true"/>
-
-		<!-- Corresponding config files -->
-		<arg name="rviz_cfg"                default="$(find structure_core)/structure_core_rviz_cfg.rviz" />
-
-		<!-- Visualization RVIZ -->
-		<node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(arg rviz_cfg)"/>
-
-		<!--remap if="$(arg stereo)" from="left/image"        to="$(arg left_image_topic_relay)"/>
-		<remap if="$(arg stereo)" from="right/image"       to="$(arg right_image_topic_relay)"/>
-		<remap if="$(arg stereo)" from="left/camera_info"  to="$(arg left_camera_info_topic)"/>
-		<remap if="$(arg stereo)" from="right/camera_info" to="$(arg right_camera_info_topic)"/>
-		<remap unless="$(arg subscribe_rgbd)" from="rgb/image"         to="$(arg rgb_topic_relay)"/>
-		<remap unless="$(arg subscribe_rgbd)" from="depth/image"       to="$(arg depth_topic_relay)"/>
-		<remap unless="$(arg subscribe_rgbd)" from="rgb/camera_info"   to="$(arg camera_info_topic)"/>
-		<remap     if="$(arg rgbd_sync)" from="rgbd_image" to="$(arg rgbd_topic)"/>
-		<remap unless="$(arg rgbd_sync)" from="rgbd_image" to="$(arg rgbd_topic)_relay"/>
-		<remap from="cloud"             to="voxel_cloud" />
-
-		<param name="decimation"  type="double" value="4"/>
-		<param name="voxel_size"  type="double" value="0.0"/>
-		<param name="approx_sync" type="bool"   value="$(arg approx_sync)"/-->
 
 	</launch>
