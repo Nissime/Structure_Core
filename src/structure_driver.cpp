@@ -303,12 +303,12 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
       	}
 
         void handleAccel(const ST::AccelerometerEvent &accelEvent)
-        {
+        { // to avoid using TFs --> rotate to x-- camera forward, z-- up, y-- the rest
           ROS_DEBUG_STREAM_THROTTLE(1.0, "Structure_Core_Node" << ": handleAccel");
           Flag_Acc = true;
-          imu_.linear_acceleration.x = accelEvent.acceleration().x * g2ms2;
+          imu_.linear_acceleration.x = -accelEvent.acceleration().z * g2ms2;  
           imu_.linear_acceleration.y = accelEvent.acceleration().y * g2ms2;
-          imu_.linear_acceleration.z = accelEvent.acceleration().z * g2ms2;
+          imu_.linear_acceleration.z = accelEvent.acceleration().x * g2ms2;
 
           imu_.header.stamp.fromSec(accelEvent.timestamp()  + biasT);
 
@@ -316,12 +316,12 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
         }
 
         void handleGyro(const ST::GyroscopeEvent &gyroEvent)
-        {
+        { // to avoid using TFs --> rotate to x-- camera forward, z-- up, y-- the rest
           ROS_DEBUG_STREAM_THROTTLE(1.0, "Structure_Core_Node" << ": handleGyro");
           Flag_Gyro = true;
-          imu_.angular_velocity.x = gyroEvent.rotationRate().x;
+          imu_.angular_velocity.x = -gyroEvent.rotationRate().z;
           imu_.angular_velocity.y = gyroEvent.rotationRate().y;
-          imu_.angular_velocity.z = gyroEvent.rotationRate().z;
+          imu_.angular_velocity.z = gyroEvent.rotationRate().x;
 
           imu_.header.stamp.fromSec(gyroEvent.timestamp() + biasT);
 
@@ -539,12 +539,12 @@ int main(int argc, char **argv) {
         break;
       case 2 :
 	settings.structureCore.infraredEnabled = true;
-        settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::Default;
+        settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::_1280x960;
         settings.structureCore.infraredMode =  ST::StructureCoreInfraredMode::LeftCameraOnly;
         break;
       case 3 :
 	settings.structureCore.infraredEnabled = true;
-        settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::Default;
+        settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::_1280x960;
         settings.structureCore.infraredMode =  ST::StructureCoreInfraredMode::RightCameraOnly;
         break;
       default :

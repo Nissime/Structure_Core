@@ -16,7 +16,7 @@ structure_driver:
   initialInfraredGain: 1.0
 
   #imu rate (100,200,800,1000)
-  imu_update_rate: 1000
+  imu_update_rate: 100
 
   configuration_res_depth: 1
   # 1-QVGA

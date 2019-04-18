@@ -1,0 +1,26 @@
+
+
+<robot name="Structure">
+  <link name="base_link" />
+  <link name="imu" />
+  <link name="camera_depth_optical_frame" />
+  <link name="camera_visible_optical_frame" />
+
+  <joint name="imu_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="imu" />
+    <origin xyz="0. 0. 0." rpy="0. 0. 0." />
+  </joint>
+
+  <joint name="point_cloud_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="camera_depth_optical_frame" />
+    <origin xyz="0. 0. 0." rpy="-1.57079632679 0. -1.57079632679" />
+  </joint>
+
+  <joint name="camera_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="camera_visible_optical_frame" />
+    <origin xyz="0. 0. 0." rpy="0. 0. 0." />
+  </joint>
+</robot>
