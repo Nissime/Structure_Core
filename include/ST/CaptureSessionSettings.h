@@ -73,7 +73,7 @@ enum class StructureCoreDepthResolution
        QVGA = _320x240,
         VGA = _640x480,
        SXGA = _1280x960,
-    Default = QVGA,
+    Default = VGA,
 };
 
 /** @brief Preset depth range modes to use for different situations. */
@@ -98,6 +98,9 @@ enum class StructureCoreDepthRangeMode
 
     /** Estimated range of 0.35m to 10.0m */
     Hybrid,
+
+    /** Specific configuration for scanning human bodies */
+    BodyScanning,
 
     /** Don't use a preset, use the provided configuration options. */
     Default,
@@ -200,7 +203,6 @@ enum class StructureCoreDemosaicMethod
 
     /** Slower, but will provide increased accuracy on edges. */
     EdgeAware,
-
 
     HowMany,
 
@@ -415,6 +417,9 @@ struct ST_API CaptureSessionSettings
 
     /** @brief Writes the current state of the struct into "[Documents]CaptureSessionSettings.json". */
     void persistCaptureSettings();
+
+    /** @brief Returns the estimated minimum and maximum depth values of the input depth range mode, in millimeters. */
+    static void minMaxDepthInMmOfDepthRangeMode(StructureCoreDepthRangeMode mode, float& min, float& max);
 };
 
 //------------------------------------------------------------------------------

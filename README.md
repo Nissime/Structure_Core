@@ -1,6 +1,8 @@
 
 BASED ON : chadrockey/structure_core_ros
 
+tested on SDK version 0.7.1 (FW: 0.9.6)
+
 To run and build:
 
 1) From your Structure Core SDK download:
@@ -19,20 +21,21 @@ To run and build:
 
 Check the samples are working (CorePlayground)
 
-2) if libStructure.so is missing do:
+2) copy libStructure.so to /usr/local/lib/ (x86_64 or arm, depends the platform):
 
-`sudo cp StructureSDK-CrossPlatform-0.7/Libraries/Structure/Linux/x86_64/libStructure.so /usr/local/lib/`
+`sudo cp Libraries/Structure/Linux/x86_64/libStructure.so /usr/local/lib/`
 
 or
 
-`sudo cp StructureSDK-CrossPlatform-0.7/Libraries/Structure/Linux/arm64/libStructure.so /usr/local/lib/`
+`sudo cp Libraries/Structure/Linux/arm64/libStructure.so /usr/local/lib/`
 
-into this repo (choose your platforms).
 
 3) `catkin_make`
 
-4) Run
+4) `source devel/setup.bash`
 
-`roslaunch src/Structure_Core/launch/structure_driver.launch` 
+5) Run
 
-5) Configs can be changed with: structure_prameters.yaml
+`roslaunch structure_core structure_driver.launch` 
+
+6) Configs can be changed with: structure_prameters.yaml

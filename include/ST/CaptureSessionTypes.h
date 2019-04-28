@@ -80,6 +80,12 @@ enum class CaptureSessionEventId
 
     /** End of file has been reached when replaying data. */
     EndOfFile,
+
+    /** The USB driver for Structure Core was not detected. Should only appear on Windows. */
+    USBDriverNotInstalled,
+
+    /** The sensor was configured correctly and is streaming data successfully. */
+    Streaming,
 };
 
 /** @brief Describes the USB version and speed by which a Structure Core sensor is connected. */

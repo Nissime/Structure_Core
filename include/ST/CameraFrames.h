@@ -63,7 +63,7 @@ struct ST_API InfraredFrame
     /** @brief Returns the infrared intrinsics for this frame. */
     const Intrinsics intrinsics() const;
 
-    /** @brief Saves the infrared frame to a PNG file at the provided path. */
+    /** @brief Saves the infrared frame to a 16bit grayscale PNG file at the provided path. */
     void saveImageToPngFile(const char* path) const;
 
     ST_DECLARE_CLONABLE_OPAQUE_INTERNALS(InfraredFrame);
@@ -124,7 +124,7 @@ struct ST_API ColorFrame
     /** @brief Returns the color intrinsics for this frame. */
     const Intrinsics intrinsics() const;
 
-    /** @brief Saves the color frame to a PNG file at the provided path. */
+    /** @brief Saves the color frame to an 8bit RGB PNG file at the provided path. */
     void saveImageToPngFile(const char* path) const;
 
 
@@ -151,6 +151,9 @@ struct ST_API DepthFrame
 
     /** @brief Contiguous chunk of `width * height` float depth values in millimeters. */
     const float* depthInMillimeters() const;
+
+    /** @brief Convert depth values into their respective RGBA values. Useful for rendering depth in a helpful way. */
+    const uint8_t* convertDepthToRgba() const;
 
     /** @brief Returns depth in millimeters at (x,y) if it exists, NAN otherwise. */
     float operator()(int x, int y) const;
@@ -185,8 +188,15 @@ struct ST_API DepthFrame
     /** @brief Returns the depth intrinsics for this frame. */
     const Intrinsics intrinsics() const;
 
-    /** @brief Saves the depth frame to a PNG file at the provided path. */
+    /** @brief Saves the depth frame to a PNG file at the provided path. The resulting PNG image will
+        contain all depth values in millimeters as 16bit.
+    */
     void saveImageToPngFile(const char* path) const;
+
+    /** @brief Converts the depth frame into a 3D point cloud using
+        intrinsic calibration then writes out the result as PLY mesh at the provided path.
+    */
+    void saveImageAsPointCloudMesh(const char* path) const;
 
     ST_DECLARE_CLONABLE_OPAQUE_INTERNALS(DepthFrame);
 };

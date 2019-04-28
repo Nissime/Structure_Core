@@ -26,6 +26,12 @@ namespace ST
     */
     ST_API std::string resolveSmartPath(const std::string& inputPath);
 
+    /** @brief Creates an empty directory at the provided path. Does nothing if the directory already exists.
+        @param inputPath The directory to create.
+        @return True if the directory was created, otherwise false.
+    */
+    ST_API bool createDirectories(const std::string& inputPath);
+
     /** @brief Utility function to get a formatted local time string, using std::put_time.
         @param format The structured format of the output string, see std::put_time for
        more information. The default format looks like: "2017-02-15_11-45-38".
@@ -109,5 +115,6 @@ namespace ST
 
         This function is Android-only. */
     ST_API bool registerSensorByUSBFileDescriptor(int fileDescriptor);
+
 
 }  // ST namespace
