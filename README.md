@@ -1,7 +1,7 @@
 
 BASED ON : chadrockey/structure_core_ros
 
-tested on SDK version 0.7.1 (FW: 0.9.6)
+Tested on SDK version 0.7.1 (FW: 0.9.6)
 
 To run and build:
 
@@ -21,7 +21,7 @@ To run and build:
 
 Check the samples are working (CorePlayground)
 
-2) copy libStructure.so to /usr/local/lib/ (x86_64 or arm, depends the platform):
+2) copy libStructure.so to /usr/local/lib/ (x86_64 or arm, depends on the platform):
 
 `sudo cp Libraries/Structure/Linux/x86_64/libStructure.so /usr/local/lib/`
 
