@@ -5,6 +5,12 @@ structure_driver:
   gyro_enable: true
   acc_enable: true
 
+  infra_red_mode: 1
+  #0 - off
+  #1 - on, both cameras
+  #2 - on, left camera
+  #3 - on, right camera
+
   #frame rates
   Framerate: 60.0
 
@@ -23,20 +29,17 @@ structure_driver:
   # 2-VGA
   # 3-SXGA
 
-  configuration_mode_depth: 7
+  configuration_mode_depth: 0
   #1 - VeryShort =  Estimated range of 0.35m to 0.92m
   #2 - Short =  Estimated range of 0.41m to 1.36m
   #3 - Medium 	=   Estimated range of 0.52m to 5.23m
   #4 - Long 	=   Estimated range of 0.58m to 8.0m
   #5 - VeryLong 	=   Estimated range of 0.58m to 10.0m
   #6 - Hybrid =   Estimated range of 0.35m to 10.0m
-  #7 - Default =   Don't use a preset, use the provided configuration options.
+  #7 - (TODO) - body scanning
+  #any other number - Default =   Don't use a preset, use the provided configuration options.
 
-  infra_red_mode: 0
-  #0 - off
-  #1 - on, both cameras
-  #2 - on, left camera
-  #3 - on, right camera
+
 
   dynamic_calibration: 1  # DO NOT CHANGE THIS NUMBER IF YOU ARE HAPPY WITH YOUR CALIBRATION!!!
   #1 - Off
