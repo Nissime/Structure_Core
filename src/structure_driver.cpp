@@ -156,9 +156,8 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
             right->is_bigendian = 0;
             right->data.resize(right->height * right->step);
             uint16_t* right_as_shorts = reinterpret_cast<uint16_t*>(right->data.data());
-	ros::Publisher imu_pub_;
 
-            sensor_msgs::ImagePtr left(new sensor_msgs::Image);
+	    sensor_msgs::ImagePtr left(new sensor_msgs::Image);
             left->header.frame_id = left_frame_id;
             left->header.stamp.fromSec(f.timestamp()  + biasT);
 
@@ -171,7 +170,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
             uint16_t* left_as_shorts = reinterpret_cast<uint16_t*>(left->data.data());
 
 
-            if(as_8bit){
+            if(as_8bit){ // This is very expensive to use
                 left->data.resize(left->height*left->width);
                 right->data.resize(right->height*right->width);
 
@@ -376,6 +375,9 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
                     done = true;
                     cond.notify_all();
                 } break;
+		case ST::CaptureSessionEventId::Streaming: {
+		    printf("Event %d ===> Streaming \n", (int)event);
+		} break;
                 default:
                     printf("Event %d unhandled\n", (int)event);
             }
@@ -402,11 +404,11 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
                         publishVisibleFrame(sample.visibleFrame);
 
-                        publishInfraredFrame(sample.infraredFrame, true);
+                        publishInfraredFrame(sample.infraredFrame, false);
 
-                        publishDepthAligned(sample.depthFrame, sample.visibleFrame);
+                        //publishDepthAligned(sample.depthFrame, sample.visibleFrame);
 
-                        publishDepthIRAligned(sample.depthFrame, sample.infraredFrame);
+                        //publishDepthIRAligned(sample.depthFrame, sample.infraredFrame);
                     }
                     break;
                 case ST::CaptureSessionSample::Type::AccelerometerEvent:
@@ -449,7 +451,7 @@ int main(int argc, char **argv) {
     ST::CaptureSessionSettings settings;
     settings.source = ST::CaptureSessionSourceId::StructureCore;
     /** @brief Set to true to enable frame synchronization between visible or color and depth. */
-    settings.frameSyncEnabled = true;
+    ros::param::param<bool>("~frameSyncEnabled",settings.frameSyncEnabled,true);
     /** @brief Set to true to deliver IMU events on a separate, dedicated background thread. Only supported for Structure Core, currently. */
     settings.lowLatencyIMU = true;
     /** @brief Set to true to apply a correction filter to the depth before streaming. This may effect performance. */
@@ -525,6 +527,7 @@ int main(int argc, char **argv) {
         break;
     }
    
+    ros::param::param<bool>("~IR_auto_exposure",settings.structureCore.infraredAutoExposureEnabled,false);
 
     int infra_red_mode = 0;
     ros::param::param<int>("~infra_red_mode",infra_red_mode,0);
@@ -539,12 +542,12 @@ int main(int argc, char **argv) {
         break;
       case 2 :
 	settings.structureCore.infraredEnabled = true;
-        settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::_1280x960;
+        settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::Default;
         settings.structureCore.infraredMode =  ST::StructureCoreInfraredMode::LeftCameraOnly;
         break;
       case 3 :
 	settings.structureCore.infraredEnabled = true;
-        settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::_1280x960;
+        settings.structureCore.infraredResolution = ST::StructureCoreInfraredResolution::Default;
         settings.structureCore.infraredMode =  ST::StructureCoreInfraredMode::RightCameraOnly;
         break;
       default :
@@ -585,11 +588,6 @@ int main(int argc, char **argv) {
     settings.structureCore.sensorSerial = nullptr;
     /** @brief Maximum amount of time (in milliseconds) to wait for a sensor to connect before throwing a timeout error. */
     settings.structureCore.sensorInitializationTimeout = 6000;
-
-    //settings.structureCore.infraredFramerate = 1.f;
-    //settings.structureCore.depthFramerate    = 1.f;
-    //settings.structureCore.visibleFramerate  = 1.f;
-
 
 
     double Framerate_double = 30.0;

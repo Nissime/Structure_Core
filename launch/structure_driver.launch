@@ -8,6 +8,8 @@
 	<arg name="rviz_cfg"          		default="$(find structure_core)/structure_core_rviz_cfg.rviz" />
 	<arg name="use_urdf" 			default="true"/>
 	<arg name="do_quat" 			default="false"/>
+	<arg name="do_pcl" 			default="false"/>
+	<arg name="do_rect" 			default="false"/>
 
 	<param if="$(arg use_sim_time)" name="use_sim_time" value="true"/>
 
@@ -49,15 +51,15 @@
 
 
 	<!-- rectify visible image -->
-	<group ns="visible">
+	<group if="$(arg do_rect)" ns="visible">
 	    <node pkg="image_proc" name="image_proc" type="image_proc" output="screen"/>
-	</group> 
+	</group>  
 
 	<!-- create pointcloud from depthmap, output: /points -->
-	<node pkg="nodelet" type="nodelet" name="cloudify_front" args="load depth_image_proc/point_cloud_xyz record_player_manager --no-bond" >
+	<node if="$(arg do_pcl)" pkg="nodelet" type="nodelet" name="cloudify_front" args="load depth_image_proc/point_cloud_xyz record_player_manager no-bond" >
 		<remap from="image_rect" to="/depth/image"/>
 		<remap from="camera_info" to="/depth/camera_info"/>
-	</node >
+	</node > 
 
 	<!-- This can be used if record is needed -->
 	<node if="$(arg Record_Bag)" pkg="rosbag" type="record" name="rosbag_record_diag"

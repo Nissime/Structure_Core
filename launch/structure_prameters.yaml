@@ -5,15 +5,20 @@ structure_driver:
   gyro_enable: true
   acc_enable: true
 
-  infra_red_mode: 1
+  infra_red_mode: 2
   #0 - off
   #1 - on, both cameras
   #2 - on, left camera
   #3 - on, right camera
 
-  #frame rates
-  Framerate: 60.0
+  #Infrared auto exposure
+  IR_auto_exposure: false
 
+  #frame rates
+  Framerate: 30
+
+  # Sync Frames
+  frameSyncEnabled: true
 
   #exposure time and gain
   initialVisibleExposure: 0.020
