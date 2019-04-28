@@ -6,7 +6,7 @@ structure_driver:
   acc_enable: true
 
   #frame rates
-  Framerate: 20.0
+  Framerate: 60.0
 
 
   #exposure time and gain
