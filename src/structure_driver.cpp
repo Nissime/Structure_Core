@@ -23,6 +23,14 @@ double timenow = 0; // initial time of the system
 double dt = 0; // initial time of the sensor
 double biasT = 0; // bias between sensor time and ros time
 double const g2ms2 = 9.81;
+double Framerate_double_sync = 10.0;
+double Framerate_double_depth = 10.0;
+double Framerate_double_vis = 10.0;
+double Framerate_double_ir = 10.0;
+double Framerate_double_depth_ir = 10.0;
+double Framerate_double_ir_inv = 0.1;
+double lastTime_ir = 0;
+bool ir_depth_diff_rate_flag = false;
 class SessionDelegate : public ST::CaptureSessionDelegate {
     private:
         std::mutex lock;
@@ -143,6 +151,8 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
         std::vector<sensor_msgs::ImagePtr> imagesFromInfraredFrame(const std::string& left_frame_id, const std::string& right_frame_id, const ST::InfraredFrame& f, bool as_8bit=false)
         {
+
+
             int single_frame_width = f.width()/2;
 
             sensor_msgs::ImagePtr right(new sensor_msgs::Image);
@@ -226,10 +236,21 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
         void publishInfraredFrame(const ST::InfraredFrame& f, bool as_8bit=false)
         {
-            if(not f.isValid()) //  or (left_image_pub_.getNumSubscribers() == 0 and right_image_pub_.getNumSubscribers() == 0)
+
+            if ((not f.isValid()) or (left_image_pub_.getNumSubscribers() == 0 and right_image_pub_.getNumSubscribers() == 0))
             {
                 return;
             }
+
+	    // if IR rate is diffrent than depth rate (Should be smaller) then we publish it only when needed
+	    if (ir_depth_diff_rate_flag && f.timestamp() - lastTime_ir < (Framerate_double_ir_inv) ) {
+		//ROS_INFO_STREAM("<---------- --------->");
+		return;
+		}
+	    else {
+		lastTime_ir = f.timestamp();
+		}
+
             std::string left_frame_id = "camera_left_optical_frame";
             std::string right_frame_id = "camera_depth_optical_frame";
 
@@ -450,8 +471,6 @@ int main(int argc, char **argv) {
 
     ST::CaptureSessionSettings settings;
     settings.source = ST::CaptureSessionSourceId::StructureCore;
-    /** @brief Set to true to enable frame synchronization between visible or color and depth. */
-    ros::param::param<bool>("~frameSyncEnabled",settings.frameSyncEnabled,true);
     /** @brief Set to true to deliver IMU events on a separate, dedicated background thread. Only supported for Structure Core, currently. */
     settings.lowLatencyIMU = true;
     /** @brief Set to true to apply a correction filter to the depth before streaming. This may effect performance. */
@@ -590,15 +609,42 @@ int main(int argc, char **argv) {
     settings.structureCore.sensorInitializationTimeout = 6000;
 
 
-    double Framerate_double = 30.0;
-    ros::param::param<double>("~Framerate",Framerate_double,30.0);
+    /** @brief Set to true to enable frame synchronization between visible or color and depth. */
+    ros::param::param<bool>("~frameSyncEnabled",settings.frameSyncEnabled,true);
 
-    settings.structureCore.infraredFramerate = (float) Framerate_double;
-    settings.structureCore.depthFramerate = (float) Framerate_double;
-    settings.structureCore.visibleFramerate = (float) Framerate_double;
 
-    ROS_INFO_STREAM("Framerate :  " << settings.structureCore.infraredFramerate);
 
+
+	// Framerate_double_sync is used unly id frameSync is enabled
+
+    if (settings.frameSyncEnabled) {
+        ros::param::param<double>("~Framerate_sync",Framerate_double_sync,10.0);
+    	settings.structureCore.infraredFramerate = (float) Framerate_double_sync;
+    	settings.structureCore.depthFramerate = (float) Framerate_double_sync;
+    	settings.structureCore.visibleFramerate = (float) Framerate_double_sync;
+	ROS_INFO_STREAM("Framerate (ALL SYNC) :  " << Framerate_double_sync);
+    }
+    else {
+	// depth and IR must have the same frame rate. we can reduce the IR frame rate when publishing
+	ros::param::param<double>("~Framerate_depth",Framerate_double_depth,10.0);
+	ros::param::param<double>("~Framerate_vis",Framerate_double_vis,10.0);
+	ros::param::param<double>("~Framerate_ir",Framerate_double_ir ,10.0);
+	
+	// TODO: take the maximum between ir and depth
+	if (Framerate_double_depth != Framerate_double_ir) ir_depth_diff_rate_flag = true;
+	Framerate_double_depth_ir = Framerate_double_depth;
+	if (Framerate_double_depth < Framerate_double_ir) {
+		Framerate_double_ir = Framerate_double_depth;
+    		ROS_INFO_STREAM("!!!!!!!!! : IR frame rate should be smaller or eaual to depth frame rate ---- using depth frame rate for IR");
+	}
+    	settings.structureCore.infraredFramerate = (float) Framerate_double_depth_ir;
+    	settings.structureCore.depthFramerate = (float) Framerate_double_depth_ir;
+    	settings.structureCore.visibleFramerate = (float) Framerate_double_vis;
+	ROS_INFO_STREAM("Framerate (DEPTH) :  " << Framerate_double_depth);
+    	ROS_INFO_STREAM("Framerate (IR) :  " << Framerate_double_ir);
+    	ROS_INFO_STREAM("Framerate (VIS) :  " << Framerate_double_vis);
+    }
+    Framerate_double_ir_inv = 1/Framerate_double_ir;
 
 
 

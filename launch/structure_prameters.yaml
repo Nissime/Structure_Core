@@ -15,10 +15,15 @@ structure_driver:
   IR_auto_exposure: false
 
   #frame rates
-  Framerate: 30
+  Framerate_sync: 20
+  Framerate_depth: 15
+  Framerate_vis: 1
+  Framerate_ir: 1  
+  # NOTE: The IR frame rate is always the same as the depth frame rate. 
+  # If the Framerate_ir is smaller than Framerate_depth it will affect only when publishing data 
 
   # Sync Frames
-  frameSyncEnabled: true
+  frameSyncEnabled: false
 
   #exposure time and gain
   initialVisibleExposure: 0.020
