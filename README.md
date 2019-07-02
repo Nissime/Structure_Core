@@ -29,6 +29,9 @@ or
 
 `sudo cp Libraries/Structure/Linux/arm64/libStructure.so /usr/local/lib/`
 
+then
+
+`sudo ln /usr/local/lib/libStructure.so`
 
 3) `catkin_make`
 
