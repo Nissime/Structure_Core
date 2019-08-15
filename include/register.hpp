@@ -37,6 +37,8 @@
 
 #include <Eigen/Geometry>
 #include <ST/CaptureSession.h>
+#include <iostream>
+#include <vector>
 
 void register_convert(const ST::DepthFrame& depth_frame, const ST::ColorFrame& color_frame, std::vector<uint8_t>& output)
 {

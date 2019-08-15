@@ -22,7 +22,7 @@ bool Flag_Gyro = false;
 double timenow = 0; // initial time of the system
 double dt = 0; // initial time of the sensor
 double biasT = 0; // bias between sensor time and ros time
-double const g2ms2 = 9.81;
+double const g2ms2 = -9.81;
 double Framerate_double_sync = 10.0;
 double Framerate_double_depth = 10.0;
 double Framerate_double_vis = 10.0;
@@ -670,7 +670,7 @@ int main(int argc, char **argv) {
     /** @brief Setting this to true will reduce latency, but might drop more frame */
     settings.structureCore.latencyReducerEnabled = true;
     /** @brief Laser projector power setting from 0.0 to 1.0 inclusive. Projector will only activate if required by streaming configuration. */
-    settings.structureCore.initialProjectorPower = 1.0f;
+    //settings.structureCore.initialProjectorPower = 1.0f;  // <--- CANCELED on 0.7.2
     //printf("%d,%d\n",time_begin.sec, time_begin.nsec);
 
 

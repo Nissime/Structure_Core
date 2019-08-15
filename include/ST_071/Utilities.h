@@ -58,6 +58,11 @@ namespace ST
     /** @brief Initialize visual logging. Safe to call multiple times. */
     ST_API void initializeVisualLogging();
 
+    /** @brief Forces a specific visual logging window to hide itself. */
+    ST_API void hideVisualLoggingWindow(int idx);
+
+    /** @brief Forces a specific visual logging window to hide itself. */
+    ST_API void showVisualLoggingWindow(int idx);
 
     /** @brief Forces all visual logging windows to hide themselves. */
     ST_API void hideAllVisualLoggingWindows();

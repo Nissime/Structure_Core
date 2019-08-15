@@ -221,8 +221,6 @@ struct ST_API ST_ALIGNED(16) Matrix4
 
     void fromExtrinsics(float tx, float ty, float tz, float qx, float qy, float qz, float qw);
 
-    void fromRotationVector(const Vector3f& rvec);
-
     inline Vector3f rotationAsZYXEuler() const;
 
     // Returns a transform that has the same rotation but a zero translation.

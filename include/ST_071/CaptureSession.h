@@ -22,8 +22,6 @@ namespace ST
 struct CaptureSession;
 struct CaptureSessionSample;
 
-struct BridgeEngineInternalState;
-
 //------------------------------------------------------------------------------
 
 /** @brief The interface for CaptureSession delegates (CaptureSession::setDelegate). */

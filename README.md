@@ -1,7 +1,7 @@
 
 BASED ON : chadrockey/structure_core_ros
 
-Tested on SDK version 0.7.1 (FW: 0.9.6)
+Tested on SDK version 0.7.2 (FW: 0.9.7)
 
 To run and build:
 

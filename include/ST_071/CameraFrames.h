@@ -36,8 +36,6 @@ struct Intrinsics;
  
     <Right Image Row 0 (size width)> <Left Image Row 0 (size width)>
     <Right Image Row 1 (size width)> <Left Image Row 1 (size width)>
-
-    Please also notice that both of left and right infrared frames' intrinsics are the same
 */
 struct ST_API InfraredFrame
 {
