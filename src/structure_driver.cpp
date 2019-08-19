@@ -2,10 +2,14 @@
 #include <mutex>
 #include <stdio.h>
 #include <iostream>
-
 #include <ST/CaptureSession.h>
 #include <ST/Utilities.h>
 #include "register.hpp"
+
+
+#include "opencv2/highgui.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/highgui.hpp"
 
 #include <ros/ros.h>
 
@@ -13,7 +17,10 @@
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/fill_image.h>
 #include <sensor_msgs/Imu.h>
+#include "std_msgs/Float32.h"
 
+using namespace cv;
+using namespace std;
 
 #define DEFAULT_FRAME_ID 	"imu"
 
@@ -31,6 +38,18 @@ double Framerate_double_depth_ir = 10.0;
 double Framerate_double_ir_inv = 0.1;
 double lastTime_ir = 0;
 bool ir_depth_diff_rate_flag = false;
+float exposure = 0.015;
+float gain = 5.0;
+int i = 0;
+Mat brightHSV;
+
+//Mat RGB_image(640,480);
+void chatterCallback(const std_msgs::Float32ConstPtr& msg)
+{
+  ROS_INFO("I heard: [%f]", msg->data);
+  gain = msg->data;
+}
+
 class SessionDelegate : public ST::CaptureSessionDelegate {
     private:
         std::mutex lock;
@@ -66,15 +85,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
             sensor_msgs::ImagePtr msg(new sensor_msgs::Image);
 
             msg->header.frame_id = frame_id;
-/*
-            if (dt==0) {
-              dt = f.timestamp();
-	      timenow = ros::Time::now().toSec();
-	      timenow2 = ST::getTimestampNow();	
-              printf("====================>>>>>    %lf,%lf,%lf \n",timenow,timenow2,dt);
 
-            }
-*/
 
             msg->header.stamp.fromSec(f.timestamp()  + biasT);
 
@@ -234,6 +245,38 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
             visible_info_pub_.publish(infoFromFrame(visible_frame_id, f));
         }
 
+        void calcExposure(const ST::ColorFrame& f)
+        {
+            if(not f.isValid() or visible_image_pub_.getNumSubscribers() == 0)
+            {
+                return;
+            }
+            //height = f.height(); 480
+            //width = f.width(); 640
+            //f.rgbSize()/f.height();
+            Mat RGB_image1(f.width(),f.height(),f.rgbData()[640*480]);
+            //printf("%d\n",f.rgbSize());
+            //cvtColor(RGB_image1, brightHSV, CV_BGR2HSV);
+            //cout << "brightHSV = "<< endl << " "  << f.rgbData() << endl << endl;
+
+
+            /*
+            try {
+                cvtColor(RGB_image1, brightHSV, CV_BGR2HSV);
+                cout << "brightHSV = "<< endl << " "  << brightHSV << endl << endl;
+            } catch (const exception& e){
+              cout << " the integer exception was caught, with value: ",'\n';
+            }
+            */
+
+          //  cout << "RGB_image1 = "<< endl << " "  << RGB_image1 << endl << endl;
+
+
+            //imshow("test2",RGB_image1);
+            //RGB_image = cv.cvtColor(RGB_image1, cv.COLOR_BGR2HSV);
+            //printf("Image Height : %d\n", f.rgbData());
+        }
+
         void publishInfraredFrame(const ST::InfraredFrame& f, bool as_8bit=false)
         {
 
@@ -326,10 +369,11 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
         { // to avoid using TFs --> rotate to x-- camera forward, z-- up, y-- the rest
           ROS_DEBUG_STREAM_THROTTLE(1.0, "Structure_Core_Node" << ": handleAccel");
           Flag_Acc = true;
-          imu_.linear_acceleration.x = -accelEvent.acceleration().z * g2ms2;  
+          imu_.linear_acceleration.x = -accelEvent.acceleration().z * g2ms2;
           imu_.linear_acceleration.y = accelEvent.acceleration().y * g2ms2;
           imu_.linear_acceleration.z = accelEvent.acceleration().x * g2ms2;
-
+          //printf("%f\n", imu_.linear_acceleration.x / -9.81 * 8.0);
+          //update_exposure_and_gain(ST::CaptureSession , 0.016 , imu_.linear_acceleration.x / -9.81 * 8.0);
           imu_.header.stamp.fromSec(accelEvent.timestamp()  + biasT);
 
           publishIMU();
@@ -348,6 +392,12 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
           publishIMU();
 
         }
+/*
+        void update_exposure_and_gain(ST::CaptureSession &sample, float exposure,float gain) {
+          //session.setInfraredCamerasExposureAndGain((float) settings.structureCore.initialInfraredExposure,(float) settings.structureCore.initialInfraredGain);
+          sample.setVisibleCameraExposureAndGain((float) exposure,(float) gain);
+          printf("%f\n", gain);
+          */
     public:
 
         SessionDelegate(ros::NodeHandle& n, ros::NodeHandle& pnh)
@@ -381,6 +431,12 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
 
         }
 
+        void autoExposure(ST::CaptureSession *session, float gain) {
+              printf("===========================%f\n", gain );
+            session->setVisibleCameraExposureAndGain	(	exposure , gain );
+
+        }
+
         void captureSessionEventDidOccur(ST::CaptureSession *, ST::CaptureSessionEventId event) override {
             printf("Received capture session event %d (%s)\n", (int)event, ST::CaptureSessionSample::toString(event));
             switch (event) {
@@ -404,7 +460,7 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
             }
         }
 
-        void captureSessionDidOutputSample(ST::CaptureSession *, const ST::CaptureSessionSample& sample) {
+        void captureSessionDidOutputSample(ST::CaptureSession *session, const ST::CaptureSessionSample& sample) {
             //printf("Received capture session sample of type %d (%s)\n", (int)sample.type, ST::CaptureSessionSample::toString(sample.type));
             switch (sample.type) {
                 case ST::CaptureSessionSample::Type::DepthFrame:
@@ -412,8 +468,27 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
                     publishDepthFrame(sample.depthFrame);
                     break;
                 case ST::CaptureSessionSample::Type::VisibleFrame:
+                    {
                     //printf("Visible frame: size %dx%d\n", sample.visibleFrame.width(), sample.visibleFrame.height());
                     publishVisibleFrame(sample.visibleFrame);
+                    gain = gain - 0.01;
+                    i = i + 1;
+                    if (i == 20){
+                      i = 0;
+                      autoExposure(session, gain);
+                    }
+
+                    /*
+                    if (gain > 4) {
+                      session->setVisibleCameraExposureAndGain	(	exposure , gain ); //TODO uncomment
+
+                      //calcExposure(sample.visibleFrame);
+                      printf(" Gain is Exposure is: %f %f\n", gain , exposure);
+                      gain=gain*0.999;
+                    }
+                    */
+//                    session->setVisibleCameraExposureAndGain	(	exposure , gain ); //TODO uncomment
+                    }
                     break;
                 case ST::CaptureSessionSample::Type::InfraredFrame:
                     //printf("Infrared frame: size %dx%d\n", sample.infraredFrame.width(), sample.infraredFrame.height());
@@ -458,6 +533,10 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
                 return done;
             });
         }
+
+
+
+
 };
 
 int main(int argc, char **argv) {
@@ -528,7 +607,7 @@ int main(int argc, char **argv) {
     }
 
 
- 
+
     int dynamic_calibration_param = 1;
     ros::param::param<int>("~dynamic_calibration",dynamic_calibration_param,1);
     switch(dynamic_calibration_param) {
@@ -545,7 +624,7 @@ int main(int argc, char **argv) {
         settings.structureCore.dynamicCalibrationMode = ST::StructureCoreDynamicCalibrationMode::Off;
         break;
     }
-   
+
     ros::param::param<bool>("~IR_auto_exposure",settings.structureCore.infraredAutoExposureEnabled,false);
 
     int infra_red_mode = 0;
@@ -629,7 +708,7 @@ int main(int argc, char **argv) {
 	ros::param::param<double>("~Framerate_depth",Framerate_double_depth,10.0);
 	ros::param::param<double>("~Framerate_vis",Framerate_double_vis,10.0);
 	ros::param::param<double>("~Framerate_ir",Framerate_double_ir ,10.0);
-	
+
 	// TODO: take the maximum between ir and depth
 	if (Framerate_double_depth != Framerate_double_ir) ir_depth_diff_rate_flag = true;
 	Framerate_double_depth_ir = Framerate_double_depth;
@@ -673,6 +752,7 @@ int main(int argc, char **argv) {
     settings.structureCore.initialProjectorPower = 1.0f;
     //printf("%d,%d\n",time_begin.sec, time_begin.nsec);
 
+    ros::Subscriber sub_message = n.subscribe("gain", 0, chatterCallback);
 
     SessionDelegate delegate(n, pnh);
     ST::CaptureSession session;
@@ -690,16 +770,17 @@ int main(int argc, char **argv) {
     if (dt==0) {
       dt = ST::getTimestampNow();
       timenow = ros::Time::now().toSec();
-      biasT = timenow - dt;      	
+      biasT = timenow - dt;
       printf("====================>>>>> \n rosTime: %lf \n structureTime: %lf \n biasT: %lf \n ====================>>>>> \n ",timenow,dt,biasT);
 
     }
 
     //while loop which waits 2 sec to reload exposure and gain
     while (ros::Time::now().toSec() - timenow < 0.5)  {
-    };
 
+    };
     session.setInfraredCamerasExposureAndGain((float) settings.structureCore.initialInfraredExposure,(float) settings.structureCore.initialInfraredGain);
+    session.setVisibleCameraExposureAndGain((float) settings.structureCore.initialVisibleExposure,(float) settings.structureCore.initialVisibleGain);
 
     ros::spin();
 
