@@ -18,6 +18,7 @@
 #include <sensor_msgs/fill_image.h>
 #include <sensor_msgs/Imu.h>
 #include "std_msgs/Float32.h"
+#include <std_msgs/Float32MultiArray.h>
 
 using namespace cv;
 using namespace std;
@@ -44,10 +45,12 @@ int i = 0;
 Mat brightHSV;
 
 //Mat RGB_image(640,480);
-void chatterCallback(const std_msgs::Float32ConstPtr& msg)
+void chatterCallback(const std_msgs::Float32MultiArray::ConstPtr& msg)
 {
-  //ROS_INFO("I heard: [%f]", msg->data);
-  gain = msg->data;
+  //ROS_INFO("I heard: [%f]", msg->data[0]);
+  //ROS_INFO("I heard: [%f]", msg->data[1]);
+  gain = msg->data[0];
+  exposure = msg->data[1];
 }
 
 class SessionDelegate : public ST::CaptureSessionDelegate {
