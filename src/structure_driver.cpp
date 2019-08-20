@@ -46,7 +46,7 @@ Mat brightHSV;
 //Mat RGB_image(640,480);
 void chatterCallback(const std_msgs::Float32ConstPtr& msg)
 {
-  ROS_INFO("I heard: [%f]", msg->data);
+  //ROS_INFO("I heard: [%f]", msg->data);
   gain = msg->data;
 }
 
@@ -430,9 +430,12 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
             imu_pub_ = im.advertise<sensor_msgs::Imu>("imu",10);
 
         }
-
-        void autoExposure(ST::CaptureSession *session, float gain) {
-              printf("===========================%f\n", gain );
+        void gainUpdate(const std_msgs::Float32ConstPtr& msg){
+          printf(":::::::::::::::::::::::::::::::%f\n", msg->data);
+          //gain = gain_ae;
+        }
+        void autoExposure(ST::CaptureSession *session, float gain, float exposure) {
+              printf("===========================%f %f\n", gain , exposure);
             session->setVisibleCameraExposureAndGain	(	exposure , gain );
 
         }
@@ -471,23 +474,15 @@ class SessionDelegate : public ST::CaptureSessionDelegate {
                     {
                     //printf("Visible frame: size %dx%d\n", sample.visibleFrame.width(), sample.visibleFrame.height());
                     publishVisibleFrame(sample.visibleFrame);
-                    gain = gain - 0.01;
+
+                    //gain = gain - 0.01;
+
                     i = i + 1;
-                    if (i == 20){
+                    if (i == 5){
                       i = 0;
-                      autoExposure(session, gain);
+                      autoExposure(session, gain, exposure );
                     }
 
-                    /*
-                    if (gain > 4) {
-                      session->setVisibleCameraExposureAndGain	(	exposure , gain ); //TODO uncomment
-
-                      //calcExposure(sample.visibleFrame);
-                      printf(" Gain is Exposure is: %f %f\n", gain , exposure);
-                      gain=gain*0.999;
-                    }
-                    */
-//                    session->setVisibleCameraExposureAndGain	(	exposure , gain ); //TODO uncomment
                     }
                     break;
                 case ST::CaptureSessionSample::Type::InfraredFrame:
