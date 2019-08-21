@@ -14,23 +14,23 @@
 	<param if="$(arg use_sim_time)" name="use_sim_time" value="true"/>
 
 	<!-- This can be used if more than one computer is used -->
-        <node if="$(arg Stream_Ros)" pkg="rostopic" type="rostopic" name="clock" args="pub -s -r 100 /clock rosgraph_msgs/Clock 'now'"/> 
+        <node if="$(arg Stream_Ros)" pkg="rostopic" type="rostopic" name="clock" args="pub -s -r 100 /clock rosgraph_msgs/Clock 'now'"/>
 
 	<rosparam command="load" file="$(find structure_core)/launch/structure_prameters.yaml"/>
 	<node pkg="structure_core" type="structure_driver" name="structure_driver" output="screen"/>
 
-
+  <node name="structure_core" pkg="structure_core" type="auto_exposure_control.py" respawn="true" output="screen"/>
 	<!-- For TFs use one time URDF or continuos TFs topics -->
 	<group if="$(arg use_urdf)">
 	 <param name="robot_description"  textfile="$(find structure_core)/launch/Structure.urdf" />
 	<node name="robot_state_publisher" pkg="robot_state_publisher"
-	    type="robot_state_publisher" />   
+	    type="robot_state_publisher" />
 	</group>
 
 	<group unless="$(arg use_urdf)">
-	 <node pkg ="tf" type="static_transform_publisher" name="pcl2baselink" args="0 0 0 -1.57079632679 0 -1.57079632679 base_link camera_depth_optical_frame 100" /> 
-	 <node pkg ="tf" type="static_transform_publisher" name="imu2baselink" args="0 0 0 0 0 0 base_link imu 10" /> 
-	 <node pkg ="tf" type="static_transform_publisher" name="bl2camera_visible" args="0 0 0 0 1.57079632679 0 base_link camera_visible_optical_frame 100" /> 
+	 <node pkg ="tf" type="static_transform_publisher" name="pcl2baselink" args="0 0 0 -1.57079632679 0 -1.57079632679 base_link camera_depth_optical_frame 100" />
+	 <node pkg ="tf" type="static_transform_publisher" name="imu2baselink" args="0 0 0 0 0 0 base_link imu 10" />
+	 <node pkg ="tf" type="static_transform_publisher" name="bl2camera_visible" args="0 0 0 0 1.57079632679 0 base_link camera_visible_optical_frame 100" />
 	</group>
 
 
@@ -46,20 +46,20 @@
 	<!--	<node pkg="nodelet" type="nodelet" name="convert" args="load depth_image_proc/convert_metric record_player_manager no-bond" >
 		<remap from="image_raw" to="/depth/image"/>
 		<remap from="image" to="/depth/image_f32"/>
- 
+
 	</node> -->
 
 
 	<!-- rectify visible image -->
 	<group if="$(arg do_rect)" ns="visible">
 	    <node pkg="image_proc" name="image_proc" type="image_proc" output="screen"/>
-	</group>  
+	</group>
 
 	<!-- create pointcloud from depthmap, output: /points -->
 	<node if="$(arg do_pcl)" pkg="nodelet" type="nodelet" name="cloudify_front" args="load depth_image_proc/point_cloud_xyz record_player_manager no-bond" >
 		<remap from="image_rect" to="/depth/image"/>
 		<remap from="camera_info" to="/depth/camera_info"/>
-	</node > 
+	</node >
 
 	<!-- This can be used if record is needed -->
 	<node if="$(arg Record_Bag)" pkg="rosbag" type="record" name="rosbag_record_diag"
