@@ -64,25 +64,33 @@ def image_callback(image, args):
     desired_msv = 2.5
     # Gains
     k_p = 0.75
-    k_i = 1.2
-    exposure_max = 0.03
+    k_i = 1.5
+    exposure_max = 0.02
     exposure_defalut = 0.015
     gain_max = 8.0
+    gain_min = 0.2
     # Maximum integral value
-    max_i = 50
+    max_i = 5
+    min_i = 0
 
     err_p = desired_msv-mean_sample_value
     err_i += err_p/30 #30hz
     if abs(err_i) > max_i:
         err_i = np.sign(err_i)*max_i
+    if (err_i) < min_i:
+        err_i = 0
     #print err_p , err_i
     gain_calc = k_p*err_p + k_i*err_i
     if gain_calc>gain_max:
         gain_calc=gain_max
-        pass
+
+    if gain_calc < gain_min:
+        gain_calc = gain_min
+
     exposure = (gain_calc)/gain_max*exposure_max
-    if exposure<0.005:
-        exposure = 0.005
+    if exposure<=(gain_min)/gain_max*exposure_max:
+        exposure = 0.001
+    print exposure
     gain.data = [gain_calc , exposure]
 
     pub3.publish(err_i)
